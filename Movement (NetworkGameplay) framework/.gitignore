@@ -1,0 +1,59 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Executables
+*.exe
+*.out
+*.app
+Base/Debug/
+Common/Debug/
+ipch/
+DM2231_Framework.opensdf
+LoadSON/Debug/
+*.sdf
+*.pdb
+Sound/Debug/
+.vs/
+LoadSON/Release/
+Common/Release/
+Base/Release/
+Sound/Release/
+Base/Base.vcxproj.user
+SONIO/Debug/
+SONIO/Release/
+*.user
+*.suo
+Debug/Common.lib
+Debug/SONIO.lib
+Debug/Sound.lib
+Release/Common.lib
+Release/SONIO.lib
+Release/Sound.lib
+*.orig
+*.ilk
+A-Star Path Finding/Debug/
+Debug/A-Star Path Finding.lib
+A-Star Path Finding/Release/
+Installer/Debug/
+Installer/Release/
+Release/A-Star Path Finding.lib
+~$ResourceCredits.xlsx
+*.opensdf
