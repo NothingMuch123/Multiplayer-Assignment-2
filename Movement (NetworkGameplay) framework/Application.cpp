@@ -150,6 +150,7 @@ bool Application::Update()
 		}
 	}
 
+	// Update all ships
 	for (ShipList::iterator ship = ships_.begin();
 	ship != ships_.end(); ship++)
 	{
@@ -183,6 +184,7 @@ bool Application::Update()
 		}
 	}
 
+	// Packet receive
 	if (Packet* packet = rakpeer_->Receive())
 	{
 		RakNet::BitStream bs(packet->data, packet->length, false);
@@ -220,7 +222,7 @@ bool Application::Update()
 				char chartemp[5];
 
 				bs.Read(id);
-				ships_.at(0)->setID( id );	
+				ships_.at(0)->setID( id );
 				bs.Read(shipcount);
 
 				for (unsigned int i = 0; i < shipcount; ++ i)
@@ -421,7 +423,9 @@ bool Application::Update()
 		rakpeer_->DeallocatePacket(packet);
 	}
 
-	if (RakNet::GetTime() - timer_ > 1000)
+	// Send data
+	float timeToSync = 1000 / 24; // Sync 24 times in a second (Millisecond)
+	if (RakNet::GetTime() - timer_ > timeToSync)
 	{
 		timer_ = RakNet::GetTime();
 		RakNet::BitStream bs2;
@@ -480,7 +484,7 @@ bool Application::Update()
 */
 void Application::Render()
 {
-	hge_->Gfx_BeginScene();
+	hge_->Gfx_BeginScene();  
 	hge_->Gfx_Clear(0);
 
 	ShipList::iterator itr;
@@ -500,7 +504,8 @@ void Application::Render()
 	for (itr2 = missiles_.begin(); itr2 != missiles_.end(); itr2++)
 	{
 		(*itr2)->Render();
-	}
+	}
+
 
 	hge_->Gfx_EndScene();
 }
