@@ -14,6 +14,7 @@ ServerApp::ServerApp() :
 	rakpeer_->SetMaximumIncomingConnections(100);
 	rakpeer_->SetOccasionalPing(true);
 	std::cout << "Server Started" << std::endl;
+	prevTime = RakNet::GetTime();
 }
 
 ServerApp::~ServerApp()
@@ -24,6 +25,10 @@ ServerApp::~ServerApp()
 
 void ServerApp::Loop()
 {
+	double currentTime = RakNet::GetTime(); // Current time by raknet
+	double dt = currentTime - prevTime; // dt is the time difference between last frame and this frame
+	prevTime = currentTime; // After calculating dt, set current time to previous time for next calculation later on
+
 	if (Packet* packet = rakpeer_->Receive())
 	{
 		RakNet::BitStream bs(packet->data, packet->length, false);
@@ -130,7 +135,7 @@ void ServerApp::SendWelcomePackage(SystemAddress& addr)
 
 	bs.Reset();
 
-	GameObject newobject(newID);
+	GameObject2 newobject(newID);
 
 	clients_.insert(std::make_pair(addr, newobject));
 

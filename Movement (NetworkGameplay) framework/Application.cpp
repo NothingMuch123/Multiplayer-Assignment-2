@@ -427,7 +427,7 @@ bool Application::Update()
 	float timeToSync = 1000 / 24; // Sync 24 times in a second (Millisecond)
 	if (RakNet::GetTime() - timer_ > timeToSync)
 	{
-		timer_ = RakNet::GetTime();
+		timer_ = RakNet::GetTime(); // Store previous time
 		RakNet::BitStream bs2;
 		unsigned char msgid = ID_MOVEMENT;
 		bs2.Write(msgid);

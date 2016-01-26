@@ -6,9 +6,9 @@
 
 class RakPeerInterface;
 
-struct GameObject 
+struct GameObject2 
 {
-	GameObject(unsigned int newid)
+	GameObject2(unsigned int newid)
 	: x_(0), y_(0), type_(1)
 	{
 		id = newid;
@@ -23,11 +23,12 @@ struct GameObject
 class ServerApp
 {
 	RakPeerInterface* rakpeer_;
-	typedef std::map<SystemAddress, GameObject> ClientMap;
+	typedef std::map<SystemAddress, GameObject2> ClientMap;
 
 	ClientMap clients_;
 
 	unsigned int newID;
+	double prevTime;
 	
 	void SendWelcomePackage(SystemAddress& addr);
 	void SendDisconnectionNotification(SystemAddress& addr);

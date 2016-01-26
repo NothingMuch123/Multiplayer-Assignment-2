@@ -11,7 +11,7 @@ class RakPeerInterface;
 //! The default angular velocity of the ship when it is in motion
 static const float DEFAULT_ANGULAR_VELOCITY = 3.0f; 
 //! The default acceleration of the ship when powered
-static const float DEFAULT_ACCELERATION = 50.0f;
+static const float DEFAULT_ACCELERATION = 100.0f;
 
 /**
 * The application class is the main body of the program. It will
@@ -29,13 +29,13 @@ class Application
 	unsigned int timer_;
 	
 	// Lab 13 Task 1 : add variables for local missle
-	Missile* mymissile;
+	Missile* mymissile; // This player's missle
 	bool have_missile;
 	bool keydown_enter;
 
 	// Lab 13 Task 8 : add variables to handle networked missiles
 	typedef std::vector<Missile*> MissileList;
-	MissileList missiles_;
+	MissileList missiles_; // List of missions for other players
 
 	bool Init();
 	static bool Loop();
