@@ -26,27 +26,32 @@ void Enemy::Init(ENEMY_TYPE type, float x, float y, float w, bool active)
 
 	// Load sprite
 	HGE* hge = hgeCreate(HGE_VERSION);
-	switch (type)
+	if (hge)
 	{
-	case E_EASY:
+		switch (type)
 		{
-			tex = hge->Texture_Load("ship4.png");
+		case E_EASY:
+			{
+				tex = hge->Texture_Load("ship4.png");
+				sprite.reset(new hgeSprite(tex, 0, 0, 64, 64));
+			}
+			break;
+		case E_NORMAL:
+			{
+				tex = hge->Texture_Load("ship4.png");
+				sprite.reset(new hgeSprite(tex, 0, 0, 64, 64));
+			}
+			break;
+		case E_HARD:
+			{
+				tex = hge->Texture_Load("ship4.png");
+				sprite.reset(new hgeSprite(tex, 0, 0, 64, 64));
+			}
+			break;
 		}
-		break;
-	case E_NORMAL:
-		{
-			tex = hge->Texture_Load("ship4.png");
-		}
-		break;
-	case E_HARD:
-		{
-			tex = hge->Texture_Load("ship4.png");
-		}
-		break;
 	}
 
 	hge->Release();
-	sprite.reset(new hgeSprite(tex, 0, 0, 64, 64));
 }
 
 bool Enemy::Update(double dt)

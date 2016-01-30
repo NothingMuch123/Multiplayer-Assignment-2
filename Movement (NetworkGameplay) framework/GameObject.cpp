@@ -16,6 +16,11 @@ GameObject::GameObject()
 
 GameObject::~GameObject()
 {
+	if (sprite.get())
+	{
+		sprite.release();
+	}
+
 	HGE* hge = hgeCreate(HGE_VERSION);
 	hge->Texture_Free(tex);
 	hge->Release();
@@ -36,7 +41,7 @@ bool GameObject::Update(double dt)
 
 void GameObject::Render()
 {
-	if (active)
+	if (active && sprite.get())
 	{
 		sprite->RenderEx(x, y, w);
 	}
@@ -47,6 +52,13 @@ void GameObject::Reset()
 	id = INVALID_ID;
 	x = y = w = velocity_x = velocity_y = 0.f;
 	active = false;
+}
+
+bool GameObject::CollideWith(GameObject * other)
+{
+	sprite->GetBoundingBox(x, y, &collidebox);
+
+	return collidebox.Intersect(other->GetBoundingBox());
 }
 
 hgeRect * GameObject::GetBoundingBox()

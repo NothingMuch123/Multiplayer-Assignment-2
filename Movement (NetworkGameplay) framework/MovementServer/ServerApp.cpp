@@ -202,6 +202,7 @@ void ServerApp::SendWelcomePackage(SystemAddress& addr)
 	bs.Reset();
 
 	ServerGameObject newobject(newID);
+	newobject.active = true;
 
 	clients_.insert(std::make_pair(addr, newobject));
 	clientList.push_back(addr); // Add client to list

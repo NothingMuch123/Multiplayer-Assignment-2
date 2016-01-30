@@ -304,15 +304,15 @@ bool Application::Update()
 					Enemy* e = FindEnemyByID(id);
 					if (e)
 					{
-						float w;
-						if (speed != 0)
+						float w = CalcW(Vector2(vel_x, vel_y));
+						/*if (speed != 0)
 						{
 							w = acosf(vel_x / speed);
 						}
 						else
 						{
 							w = 0.f;
-						}
+						}*/
 						e->Init(type, x, y, w, active);
 						e->SetVelocityX(vel_x);
 						e->SetVelocityY(vel_y);
@@ -518,7 +518,7 @@ bool Application::Update()
 				Enemy* e = FindEnemyByID(id);
 				if (e)
 				{
-					float w = acosf(vel_x);
+					float w = CalcW(Vector2(vel_x, vel_y));
 					e->Init(type, x, y, w);
 					e->SetVelocityX(vel_x);
 					e->SetVelocityY(vel_y);
@@ -703,6 +703,16 @@ void Application::SendScreenSize()
 	BS_ScreenRes.Write(S_SCREEN_HEIGHT);
 	rakpeer_->Send(&BS_ScreenRes, HIGH_PRIORITY, RELIABLE, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
 	std::cout << "Sent screen size" << std::endl;
+}
+
+float Application::CalcW(Vector2 dir)
+{
+	if (dir.x == dir.y)
+	{
+		return 0.f;
+	}
+	dir = dir.Normalized();
+	return atan2(dir.y, dir.x);
 }
 
 bool Application::SendInitialPosition()

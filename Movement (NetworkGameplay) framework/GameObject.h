@@ -21,6 +21,8 @@ public:
 	virtual void Render();
 	virtual void Reset();
 
+	bool CollideWith(GameObject* other);
+
 	// Setters and Getters
 	void SetID(int id) { this->id = id; }
 	int GetID() { return id; }

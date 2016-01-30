@@ -13,25 +13,46 @@ class RakPeerInterface;
 struct ServerGameObject 
 {
 	ServerGameObject(unsigned int newid)
-	: x_(0), y_(0), type_(1)
+	: x_(0), y_(0), type_(1), active(false)
 	{
 		id = newid;
 	}
 
 	void Reset()
 	{
-		id = 0;
+		//id = 0;
 		x_ = y_ = 0.f;
 		type_ = 0;
+		active = false;
 	}
 
 	unsigned int id;
 	float x_;
 	float y_;
 	int type_;
+	bool active;
 };
 
-struct ServerEnemy : ServerGameObject
+struct ServerVelocityObject : ServerGameObject
+{
+	ServerVelocityObject(unsigned int newid)
+		: ServerGameObject(newid), vel_x(0.f), vel_y(0.f), speed(0.f)
+	{
+	}
+
+	void Reset()
+	{
+		ServerGameObject::Reset();
+		speed = 0.f;
+		vel_x = vel_y = 0.f;
+	}
+
+	float speed;
+	float vel_x;
+	float vel_y;
+};
+
+struct ServerEnemy : ServerVelocityObject
 {
 	enum ENEMY_TYPE
 	{
@@ -42,26 +63,34 @@ struct ServerEnemy : ServerGameObject
 	};
 
 	ServerEnemy(ENEMY_TYPE type, unsigned int newid)
-		: ServerGameObject(newid), active(false), vel_x(0.f), vel_y(0.f), hp(0), speed(0.f)
+		: ServerVelocityObject(newid),  hp(0)
 	{
 	}
 
 	void Reset()
 	{
+		ServerVelocityObject::Reset();
 		x_ = y_ = 0.f;
 		type_ = 0;
-		active = false;
-		vel_x = vel_y = 0.f;
 		hp = 0;
-		speed = 0.f;
 	}
 
-	bool active;
-	float vel_x;
-	float vel_y;
 	int hp;
-	float speed;
 };
+
+/*struct ServerProjectile : ServerGameObject
+{
+	enum PROJECTILE_TYPE
+	{
+		PROJ_NORMAL,
+		PROJ_SEEKING,
+	};
+
+	ServerProjectile(unsigned int newid)
+		: ServerGameObject(newid)
+	{
+	}
+};*/
 
 class ServerApp
 {

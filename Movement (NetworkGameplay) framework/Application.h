@@ -60,6 +60,8 @@ private:
 	bool SendInitialPosition();
 	void SendScreenSize();
 
+	float CalcW(Vector2 dir);
+
 	// Lab 13
 	void CreateMissile( float x, float y, float w, int id );
 	bool RemoveMissile( float x, float y, float w, int id );
