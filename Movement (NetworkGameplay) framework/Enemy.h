@@ -9,16 +9,18 @@ public:
 	enum ENEMY_TYPE
 	{
 		E_NONE,
-		E_WEAK,
+		E_EASY,
 		E_NORMAL,
 		E_HARD,
+		E_NUM_ENEMY,
 	};
 
 	Enemy();
 	virtual ~Enemy();
 
 	virtual void Init(ENEMY_TYPE type, float x, float y, float w, bool active = true);
-	virtual void Update(double dt);
+	virtual bool Update(double dt);
+	virtual void Render();
 	virtual void Reset();
 
 	// Setters and Getters
@@ -34,13 +36,15 @@ public:
 	void SetDestination(Vector2 destination);
 	Vector2& GetDestination();
 
+	void SetSpeed(float speed);
+	float GetSpeed();
+
 protected:
 	int hp;
 	ENEMY_TYPE type;
 	int visibility; // Which player can kill it (-1 = All | 0 = Player 1 | 1 = Player 2)
 	Vector2 destination;
-
-
+	float speed;
 };
 
 #endif

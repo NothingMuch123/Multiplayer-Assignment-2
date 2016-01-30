@@ -61,6 +61,29 @@ Application::~Application() throw()
 * It should also initialise the network system
 */
 
+Enemy * Application::FindEnemyByID(int id)
+{
+	for (vector<Enemy*>::iterator it = enemyList.begin(); it != enemyList.end(); ++it)
+	{
+		Enemy* e = *it;
+		if (e->GetID() == id)
+		{
+			return e;
+		}
+	}
+	return nullptr;
+}
+
+void Application::InitEnemyList()
+{
+	for (int i = 0; i < 100; ++i)
+	{
+		Enemy* e = new Enemy();
+		e->SetID(i);
+		enemyList.push_back(e);
+	}
+}
+
 bool Application::Init()
 {
 	std::ifstream inData;	
@@ -78,10 +101,12 @@ bool Application::Init()
 	hge_->System_SetState(HGE_TITLE, "Movement");
 	hge_->System_SetState(HGE_LOGFILE, "movement.log");
 	hge_->System_SetState(HGE_DONTSUSPEND, true);
+	hge_->System_SetState(HGE_SCREENWIDTH, S_SCREEN_WIDTH);
+	hge_->System_SetState(HGE_SCREENHEIGHT, S_SCREEN_HEIGHT);
 
 	if(hge_->System_Initiate()) 
 	{
-		ships_.push_back(new Ship(rand()%4+1, rand()%500+100, rand()%400+100));
+		ships_.push_back(new Ship(rand()%3+1, rand() % 500 + 100, rand() % 400 + 100));
 		ships_.at(0)->SetName("My Ship");
 		if (rakpeer_->Startup(1,30,&SocketDescriptor(), 1))
 		{
@@ -184,6 +209,23 @@ bool Application::Update()
 		}
 	}
 
+	// Update enemies
+	for (vector<Enemy*>::iterator it = enemyList.begin(); it != enemyList.end(); ++it)
+	{
+		Enemy* e = *it;
+		if (e->GetActive())
+		{
+			bool reset = e->Update(timedelta);
+			if (reset)
+			{
+				RakNet::BitStream bs;
+				bs.Write((unsigned char)ID_DESTROY_ENEMY);
+				bs.Write(e->GetID());
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+			}
+		}
+	}
+
 	// Packet receive
 	if (Packet* packet = rakpeer_->Receive())
 	{
@@ -203,7 +245,11 @@ bool Application::Update()
 		switch(msgid)
 		{
 		case ID_CONNECTION_REQUEST_ACCEPTED:
-			std::cout << "Connected to Server" << std::endl;
+			{
+				std::cout << "Connected to Server" << std::endl;
+				SendScreenSize();
+				InitEnemyList();
+			}
 			break;
 
 		case ID_NO_FREE_INCOMING_CONNECTIONS:
@@ -240,7 +286,48 @@ bool Application::Update()
 					ships_.push_back(ship);
 				}
 
+				for (vector<Enemy*>::iterator it = enemyList.begin(); it != enemyList.end(); ++it)
+				{
+					int id, hp;
+					bool active;
+					Enemy::ENEMY_TYPE type;
+					float x, y, vel_x, vel_y, speed;
+					bs.Read(id);
+					bs.Read(active);
+					bs.Read(type);
+					bs.Read(x);
+					bs.Read(y);
+					bs.Read(vel_x);
+					bs.Read(vel_y);
+					bs.Read(speed);
+					bs.Read(hp);
+					Enemy* e = FindEnemyByID(id);
+					if (e)
+					{
+						float w;
+						if (speed != 0)
+						{
+							w = acosf(vel_x / speed);
+						}
+						else
+						{
+							w = 0.f;
+						}
+						e->Init(type, x, y, w, active);
+						e->SetVelocityX(vel_x);
+						e->SetVelocityY(vel_y);
+						e->SetSpeed(speed);
+						e->SetHP(hp);
+					}
+				}
+
 				SendInitialPosition();
+			}
+			break;
+		case ID_REJECT_PLAYER:
+			{
+				std::cout << "Rejected player" << std::endl;
+				return true;
 			}
 			break;
 
@@ -415,6 +502,57 @@ bool Application::Update()
 				}
 			}
 			break;
+		case ID_NEW_ENEMY:
+			{
+				int id, hp;
+				Enemy::ENEMY_TYPE type;
+				float x, y, vel_x, vel_y, speed;
+				bs.Read(id);
+				bs.Read(type);
+				bs.Read(x);
+				bs.Read(y);
+				bs.Read(vel_x);
+				bs.Read(vel_y);
+				bs.Read(speed);
+				bs.Read(hp);
+				Enemy* e = FindEnemyByID(id);
+				if (e)
+				{
+					float w = acosf(vel_x);
+					e->Init(type, x, y, w);
+					e->SetVelocityX(vel_x);
+					e->SetVelocityY(vel_y);
+					e->SetSpeed(speed);
+					e->SetHP(hp);
+				}
+			}
+			break;
+		case ID_UPDATE_ENEMY:
+			{
+				int id;
+				bs.Read(id);
+				Enemy* e = FindEnemyByID(id);
+				if (e)
+				{
+					float x, y;
+					bs.Read(x);
+					bs.Read(y);
+					e->SetX(x);
+					e->SetY(y);
+				}
+			}
+			break;
+		case ID_DESTROY_ENEMY:
+			{
+				int id;
+				bs.Read(id);
+				Enemy* e = FindEnemyByID(id);
+				if (e)
+				{
+					e->Reset();
+				}
+			}
+			break;
 
 		default:
 			std::cout << "Unhandled Message Identifier: " << (int)msgid << std::endl;
@@ -506,6 +644,13 @@ void Application::Render()
 		(*itr2)->Render();
 	}
 
+	// Render enemies
+	for (vector<Enemy*>::iterator it = enemyList.begin(); it != enemyList.end(); ++it)
+	{
+		Enemy* e = *it;
+		e->Render();
+	}
+
 
 	hge_->Gfx_EndScene();
 }
@@ -547,6 +692,17 @@ void Application::Start()
 	{
 		hge_->System_Start();
 	}
+}
+
+void Application::SendScreenSize()
+{
+	// Send screen size to server
+	RakNet::BitStream BS_ScreenRes;
+	BS_ScreenRes.Write((unsigned char)ID_SET_SCREEN_TO_SERVER);
+	BS_ScreenRes.Write(S_SCREEN_WIDTH);
+	BS_ScreenRes.Write(S_SCREEN_HEIGHT);
+	rakpeer_->Send(&BS_ScreenRes, HIGH_PRIORITY, RELIABLE, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+	std::cout << "Sent screen size" << std::endl;
 }
 
 bool Application::SendInitialPosition()

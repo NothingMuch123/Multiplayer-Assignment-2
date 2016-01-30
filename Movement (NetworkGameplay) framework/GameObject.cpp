@@ -29,8 +29,17 @@ void GameObject::Init(float x, float y, float w, bool active)
 	this->active = active;
 }
 
-void GameObject::Update(double dt)
+bool GameObject::Update(double dt)
 {
+	return false;
+}
+
+void GameObject::Render()
+{
+	if (active)
+	{
+		sprite->RenderEx(x, y, w);
+	}
 }
 
 void GameObject::Reset()

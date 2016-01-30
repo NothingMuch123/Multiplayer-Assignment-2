@@ -17,7 +17,8 @@ public:
 	virtual ~GameObject();
 
 	virtual void Init(float x, float y, float w, bool active = true);
-	virtual void Update(double dt);
+	virtual bool Update(double dt);
+	virtual void Render();
 	virtual void Reset();
 
 	// Setters and Getters

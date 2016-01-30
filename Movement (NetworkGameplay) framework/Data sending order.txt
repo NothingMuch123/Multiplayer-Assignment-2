@@ -1,0 +1,21 @@
+Order of data for creating enemy:
+MsgID
+ID
+Type
+X
+Y
+Vel_x
+Vel_y
+Speed
+Health
+
+Order of data for sending enemy list:
+ID
+Active
+Type
+X
+Y
+Vel_x
+Vel_y
+Speed
+Health

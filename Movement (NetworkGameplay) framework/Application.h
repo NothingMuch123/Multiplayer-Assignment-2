@@ -5,6 +5,11 @@
 #include "missile.h"
 #include <vector>
 
+// Enemies
+#include "Enemy.h"
+
+using std::vector;
+
 class HGE;
 class RakPeerInterface;
 
@@ -22,11 +27,21 @@ static const float DEFAULT_ACCELERATION = 100.0f;
 
 class Application
 {
+public:
+	static const int S_SCREEN_WIDTH = 800;
+	static const int S_SCREEN_HEIGHT = 600;
+
+private:
 	HGE* hge_; //!< Instance of the internal graphics engine
 	typedef std::vector<Ship*> ShipList;  //!< A list of ships
 	ShipList ships_; //!< List of all the ships in the universe
 	RakPeerInterface* rakpeer_;
 	unsigned int timer_;
+
+	// Enemy
+	vector<Enemy*> enemyList;
+	Enemy* FindEnemyByID(int id);
+	void InitEnemyList();
 	
 	// Lab 13 Task 1 : add variables for local missle
 	Missile* mymissile; // This player's missle
@@ -43,6 +58,7 @@ class Application
 	bool checkCollisions(Ship* ship);
 	void ProcessWelcomePackage();
 	bool SendInitialPosition();
+	void SendScreenSize();
 
 	// Lab 13
 	void CreateMissile( float x, float y, float w, int id );

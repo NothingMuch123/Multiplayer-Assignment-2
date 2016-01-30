@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Server.cpp" />
+    <ClCompile Include="ServerApp.cpp" />
+    <ClCompile Include="..\Vector2.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ServerApp.h" />
+    <ClInclude Include="..\MyMath.h" />
+    <ClInclude Include="..\Vector2.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Enemy">
+      <UniqueIdentifier>{0845a6bd-e2d2-4444-b7d5-287a6d8e0e55}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject">
+      <UniqueIdentifier>{3cebf20d-9862-4bf5-8edf-5ccd04f400a0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
