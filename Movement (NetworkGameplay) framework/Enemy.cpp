@@ -18,6 +18,7 @@ Enemy::~Enemy()
 void Enemy::Init(ENEMY_TYPE type, float x, float y, float w, bool active)
 {
 	GameObject::Init(x, y, w, active);
+	this->type = type;
 
 	// Set up default values
 	this->type = type;
@@ -33,24 +34,27 @@ void Enemy::Init(ENEMY_TYPE type, float x, float y, float w, bool active)
 			{
 				tex = hge->Texture_Load("ship4.png");
 				sprite.reset(new hgeSprite(tex, 0, 0, 64, 64));
+				sprite.get()->SetHotSpot(32, 32);
 			}
 			break;
 		case E_NORMAL:
 			{
 				tex = hge->Texture_Load("ship4.png");
 				sprite.reset(new hgeSprite(tex, 0, 0, 64, 64));
+				sprite.get()->SetHotSpot(32, 32);
 			}
 			break;
 		case E_HARD:
 			{
 				tex = hge->Texture_Load("ship4.png");
 				sprite.reset(new hgeSprite(tex, 0, 0, 64, 64));
+				sprite.get()->SetHotSpot(32, 32);
 			}
 			break;
 		}
 	}
 
-	destination.Set(Application::S_SCREEN_WIDTH * 0.5f - 32.f, Application::S_SCREEN_HEIGHT * 0.5f - 32.f);
+	destination.Set(Application::S_SCREEN_WIDTH * 0.5f, Application::S_SCREEN_HEIGHT * 0.5f);
 
 	hge->Release();
 }
@@ -80,14 +84,15 @@ void Enemy::Render()
 
 void Enemy::Reset()
 {
+	//GameObject::Reset();
+	// Do not use GameObject::Reset() as ID should not be reset
+	x = y = w = velocity_x = velocity_y = 0.f;
+	active = false;
+
 	type = E_NONE;
 	hp = -1;
 	visibility = -1;
 	destination = Vector2::ZERO;
-	// Do not use GameObject::Reset() as ID should not be reset
-	x = y = w = velocity_x = velocity_y = 0.f;
-	active = false;
-	//GameObject::Reset();
 }
 
 void Enemy::SetHP(int hp)

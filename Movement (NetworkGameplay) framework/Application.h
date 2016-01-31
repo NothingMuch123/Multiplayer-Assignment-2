@@ -11,6 +11,9 @@
 // Animation
 #include "Explosion.h"
 
+// Projectile
+#include "Projectile.h"
+
 using std::vector;
 
 class HGE;
@@ -33,6 +36,8 @@ class Application
 public:
 	static const int S_SCREEN_WIDTH = 800;
 	static const int S_SCREEN_HEIGHT = 600;
+	static const float S_BULLET_SHOOT_INTERVAL;
+	static const float S_MISSILE_SHOOT_INTERVAL;
 
 private:
 	HGE* hge_; //!< Instance of the internal graphics engine
@@ -50,6 +55,21 @@ private:
 	vector<Explosion*> explosionList;
 	void InitExplosionList();
 	Explosion* FetchExplosion();
+
+	// Projectile
+	vector<Projectile*> projectileList;
+	void InitProjectileList();
+	Projectile* FetchProjectile();
+	Projectile* FindProjectileByID(int id);
+	void Shoot(Projectile::PROJECTILE_TYPE type);
+	Enemy* FindNearest();
+	float bulletShootTimer;
+	float missileShootTimer;
+	vector<Projectile*> projectileUpdateList;
+
+	// Ship
+	Ship* FindShipByID(int id);
+
 	
 	// Lab 13 Task 1 : add variables for local missle
 	Missile* mymissile; // This player's missle
@@ -68,8 +88,6 @@ private:
 	bool SendInitialPosition();
 	void SendScreenSize();
 
-	float CalcW(Vector2 dir);
-
 	// Lab 13
 	void CreateMissile( float x, float y, float w, int id );
 	bool RemoveMissile( float x, float y, float w, int id );
@@ -83,6 +101,8 @@ public:
 	void Start();
 	bool Update();
 	void Render();
+
+	static float CalcW(Vector2 dir);
 };
 
 #endif

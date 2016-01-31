@@ -48,7 +48,7 @@
       <Filter>Explosion</Filter>
     </ClCompile>
     <ClCompile Include="Projectile.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Projectile</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -83,7 +83,7 @@
       <Filter>Explosion</Filter>
     </ClInclude>
     <ClInclude Include="Projectile.h">
-      <Filter>Header Files</Filter>
+      <Filter>Projectile</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

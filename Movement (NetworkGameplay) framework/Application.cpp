@@ -11,7 +11,8 @@
 #include <iostream>
 #include <fstream>
 
-
+const float Application::S_BULLET_SHOOT_INTERVAL = 0.5f;
+const float Application::S_MISSILE_SHOOT_INTERVAL = 1.f;;
 
 // Lab 13 Task 9a : Uncomment the macro NETWORKMISSILE
 #define NETWORKMISSLE
@@ -40,6 +41,8 @@ Application::Application()
 // Lab 13 Task 2 : add new initializations
 , mymissile(NULL)
 , keydown_enter(false)
+, bulletShootTimer(S_BULLET_SHOOT_INTERVAL)
+, missileShootTimer(S_MISSILE_SHOOT_INTERVAL)
 {
 }
 
@@ -86,7 +89,7 @@ void Application::InitEnemyList()
 
 void Application::InitExplosionList()
 {
-	for (int i = 0; i < 20; ++i)
+	for (int i = 0; i < 100; ++i)
 	{
 		Explosion* explosion = new Explosion();
 		explosionList.push_back(explosion);
@@ -101,6 +104,137 @@ Explosion * Application::FetchExplosion()
 		if (!e->isActive())
 		{
 			return e;
+		}
+	}
+	return nullptr;
+}
+
+void Application::InitProjectileList()
+{
+	for (int i = 0; i < 100; ++i)
+	{
+		Projectile* p = new Projectile();
+		p->SetID(i);
+		projectileList.push_back(p);
+	}
+}
+
+Projectile * Application::FetchProjectile()
+{
+	for (vector<Projectile*>::iterator it = projectileList.begin(); it != projectileList.end(); ++it)
+	{
+		Projectile* p = *it;
+		if (!p->GetActive())
+		{
+			return p;
+		}
+	}
+	return nullptr;
+	/*const int BATCH_PRODUCE = 20;
+	for (int i = 0; i < BATCH_PRODUCE; ++i)
+	{
+		Projectile* p = new Projectile();
+		projectileList.push_back(p);
+	}
+	return projectileList.back();*/
+}
+
+Projectile * Application::FindProjectileByID(int id)
+{
+	for (vector<Projectile*>::iterator it = projectileList.begin(); it != projectileList.end(); ++it)
+	{
+		Projectile* p = *it;
+		if (p->GetID() == id)
+		{
+			return p;
+		}
+	}
+	return nullptr;
+}
+
+void Application::Shoot(Projectile::PROJECTILE_TYPE type)
+{
+	Projectile* p = FetchProjectile();
+	if (p)
+	{
+		float posX = ships_.at(0)->GetX();
+		float posY = ships_.at(0)->GetY();
+		switch (type)
+		{
+		case Projectile::PROJ_BULLET:
+			{
+				// TODO: Find pos
+				p->Init(ships_.at(0), type, posX, posY, ships_.at(0)->GetW());
+				p->SetDamage(1);
+				p->SetSpeed(400.f);
+				bulletShootTimer = 0.f;
+			}
+			break;
+		case Projectile::PROJ_SEEKING_MISSLE:
+			{
+				// TODO: Find pos
+				p->Init(ships_.at(0), type, posX, posY, ships_.at(0)->GetW());
+				p->SetDamage(5);
+				p->SetSpeed(250.f);
+				p->SetTarget(FindNearest());
+				missileShootTimer = 0.f;
+			}
+			break;
+		}
+
+		RakNet::BitStream bs;
+		bs.Write((unsigned char)ID_SHOOT);
+		bs.Write(p->GetID());
+		bs.Write(p->GetType());
+		bs.Write(p->GetX());
+		bs.Write(p->GetY());
+		bs.Write(p->GetW());
+		bs.Write(p->GetVelocityX());
+		bs.Write(p->GetVelocityY());
+		bs.Write(p->GetSpeed());
+		bs.Write(p->GetDamage());
+		bs.Write(p->GetOwner()->GetID());
+		// Send target if available
+		if (p->GetTarget())
+		{
+			bs.Write(p->GetTarget()->GetID());
+		}
+		else
+		{
+			bs.Write(-1);
+		}
+		rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+	}
+}
+
+Enemy * Application::FindNearest()
+{
+	float shortestLength = -1;
+	Enemy* shortestEnemy = nullptr;
+	for (vector<Enemy*>::iterator it = enemyList.begin(); it != enemyList.end(); ++it)
+	{
+		Enemy* e = *it;
+		if (e->GetActive())
+		{
+			float dist = (Vector2(ships_.at(0)->GetX(), ships_.at(0)->GetY()) - Vector2(e->GetX(), e->GetY())).Length();
+			if (shortestLength == -1 || dist < shortestLength)
+			{
+				shortestLength = dist;
+				shortestEnemy = e;
+			}
+		}
+	}
+	return shortestEnemy;
+}
+
+Ship * Application::FindShipByID(int id)
+{
+	for (ShipList::iterator it = ships_.begin(); it != ships_.end(); ++it)
+	{
+		Ship* s = *it;
+		if (s->GetID() == id)
+		{
+			return s;
 		}
 	}
 	return nullptr;
@@ -158,6 +292,14 @@ bool Application::Update()
 		return true;
 
 	float timedelta = hge_->Timer_GetDelta();
+	if (bulletShootTimer < S_BULLET_SHOOT_INTERVAL)
+	{
+		bulletShootTimer += timedelta;
+	}
+	if (missileShootTimer < S_MISSILE_SHOOT_INTERVAL)
+	{
+		missileShootTimer += timedelta;
+	}
 
 	ships_.at(0)->SetAngularVelocity(0.0f);
 
@@ -182,7 +324,7 @@ bool Application::Update()
 	}
 
 	// Lab 13 Task 4 : Add a key to shoot missiles
-	if (hge_->Input_GetKeyState(HGEK_ENTER))
+	/*if (hge_->Input_GetKeyState(HGEK_ENTER))
 	{
 		if (!keydown_enter)
 		{
@@ -195,6 +337,21 @@ bool Application::Update()
 		if (keydown_enter)
 		{
 			keydown_enter = false;
+		}
+	}*/
+
+	if (hge_->Input_GetKeyState(HGEK_ENTER))
+	{
+		if (missileShootTimer >= S_MISSILE_SHOOT_INTERVAL)
+		{
+			Shoot(Projectile::PROJ_SEEKING_MISSLE);
+		}
+	}
+	if (hge_->Input_GetKeyState(HGEK_SPACE))
+	{
+		if (bulletShootTimer >= S_BULLET_SHOOT_INTERVAL)
+		{
+			Shoot(Projectile::PROJ_BULLET);
 		}
 	}
 
@@ -249,11 +406,71 @@ bool Application::Update()
 		}
 	}*/
 
+	// Update projectile
+	for (vector<Projectile*>::iterator it = projectileList.begin(); it != projectileList.end(); ++it)
+	{
+		Projectile* p = *it;
+		if (/*p->GetOwner() == ships_.at(0) && */p->GetActive()) // Only update your own projectile
+		{
+			bool reset = p->Update(timedelta);
+			RakNet::BitStream bs;
+			if (reset)
+			{
+				p->Reset();
+				bs.Write((unsigned char)ID_DESTROY_PROJECTILE);
+				bs.Write(p->GetID());
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+			}
+			else
+			{
+				/*int max = projectileUpdateList.size();
+				int count = 0;
+				for (vector<Projectile*>::iterator it2 = projectileUpdateList.begin(); it2 != projectileUpdateList.end(); ++it2)
+				{
+					Projectile* p2 = *it2;
+					if (p == p2)
+					{
+						break;
+					}
+					else
+					{
+						++count;
+					}
+				}
+				if (count == max)
+				{
+					projectileUpdateList.push_back(p);
+				}*/
+				/*bs.Write((unsigned char)ID_UPDATE_PROJECTILE);
+				bs.Write(p->GetID());
+				bs.Write(p->GetActive());
+				bs.Write(p->GetType());
+				bs.Write(p->GetX());
+				bs.Write(p->GetY());
+				bs.Write(p->GetVelocityX());
+				bs.Write(p->GetVelocityY());
+				bs.Write(p->GetSpeed());
+				bs.Write(p->GetDamage());
+				bs.Write(p->GetOwner()->GetID());
+				// Send target id if available
+				if (p->GetTarget())
+				{
+					bs.Write(p->GetTarget()->GetID());
+				}
+				else
+				{
+					bs.Write(-1);
+				}
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);*/
+			}
+		}
+	}
+
 	// Update explosions
 	for (vector<Explosion*>::iterator it = explosionList.begin(); it != explosionList.end(); ++it)
 	{
 		Explosion* e = *it;
-		if (e->isActive())
+		if ( e->isActive())
 		{
 			e->Update(timedelta);
 		}
@@ -283,6 +500,7 @@ bool Application::Update()
 				SendScreenSize();
 				InitEnemyList();
 				InitExplosionList();
+				InitProjectileList();
 			}
 			break;
 
@@ -596,6 +814,101 @@ bool Application::Update()
 				}
 			}
 			break;
+		case ID_SHOOT:
+			{
+				int id, damage, owner, target;
+				Projectile::PROJECTILE_TYPE type;
+				float x, y, w, vel_x, vel_y, speed;
+				bs.Read(id);
+
+				Projectile* p = FindProjectileByID(id);
+				if (p)
+				{
+					bs.Read(type);
+					bs.Read(x);
+					bs.Read(y);
+					bs.Read(w);
+					bs.Read(vel_x);
+					bs.Read(vel_y);
+					bs.Read(speed);
+					bs.Read(damage);
+					bs.Read(owner);
+					bs.Read(target);
+					
+					Ship* sOwner = FindShipByID(owner);
+					if (sOwner)
+					{
+						p->Init(sOwner, type, x, y, w);
+						p->SetVelocityX(vel_x);
+						p->SetVelocityY(vel_y);
+						p->SetSpeed(speed);
+						p->SetDamage(damage);
+						if (target != -1)
+						{
+							Enemy* sTarget = FindEnemyByID(target);
+							if (sTarget)
+							{
+								p->SetTarget(sTarget);
+							}
+						}
+					}
+				}
+			}
+			break;
+		case ID_UPDATE_PROJECTILE:
+			{
+				int id, damage, owner, target;
+				Projectile::PROJECTILE_TYPE type;
+				float x, y, vel_x, vel_y, speed;
+				bool active;
+				bs.Read(id);
+
+				Projectile* p = FindProjectileByID(id);
+				if (p)
+				{
+					bs.Read(active);
+					bs.Read(type);
+					bs.Read(x);
+					bs.Read(y);
+					bs.Read(vel_x);
+					bs.Read(vel_y);
+					bs.Read(speed);
+					bs.Read(damage);
+					bs.Read(owner);
+					bs.Read(target);
+
+					Ship* sOwner = FindShipByID(owner);
+					if (sOwner)
+					{
+						p->Init(sOwner, type, x, y, sOwner->GetW(), active);
+						p->SetVelocityX(vel_x);
+						p->SetVelocityY(vel_y);
+						p->SetSpeed(speed);
+						p->SetDamage(damage);
+						if (target != -1)
+						{
+							Enemy* sTarget = FindEnemyByID(target);
+							if (sTarget)
+							{
+								p->SetTarget(sTarget);
+							}
+						}
+					}
+				}
+			}
+			break;
+		case ID_DESTROY_PROJECTILE:
+			{
+				int id;
+				bs.Read(id);
+				Projectile* p = FindProjectileByID(id);
+				if (p)
+				{
+					// Reset projectile
+					p->Reset();
+				}
+			}
+			break;
 
 		default:
 			std::cout << "Unhandled Message Identifier: " << (int)msgid << std::endl;
@@ -637,7 +950,7 @@ bool Application::Update()
 
 
 		// Lab 13 Task 11 : send missile update 
-		if (mymissile)
+		/*if (mymissile)
 		{
 			RakNet::BitStream bs3;
 			unsigned char msgid2 = ID_UPDATEMISSILE;
@@ -651,7 +964,39 @@ bool Application::Update()
 			bs3.Write(mymissile->GetVelocityX());
 			bs3.Write(mymissile->GetVelocityY());
 			rakpeer_->Send(&bs3, HIGH_PRIORITY, UNRELIABLE_SEQUENCED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+		}*/
+
+		// Send update projectile
+		for (int i = 0; i < projectileUpdateList.size(); ++i)
+		{
+			Projectile* p = projectileList[i];
+			if (p && p->GetActive())
+			{
+				RakNet::BitStream sendProj;
+				sendProj.Write((unsigned char)ID_UPDATE_PROJECTILE);
+				sendProj.Write(p->GetID());
+				sendProj.Write(p->GetActive());
+				sendProj.Write(p->GetType());
+				sendProj.Write(p->GetX());
+				sendProj.Write(p->GetY());
+				sendProj.Write(p->GetVelocityX());
+				sendProj.Write(p->GetVelocityY());
+				sendProj.Write(p->GetSpeed());
+				sendProj.Write(p->GetDamage());
+				sendProj.Write(p->GetOwner()->GetID());
+				// Send target id if available
+				if (p->GetTarget())
+				{
+					sendProj.Write(p->GetTarget()->GetID());
+				}
+				else
+				{
+					sendProj.Write(-1);
+				}
+				rakpeer_->Send(&sendProj, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+			}
 		}
+		projectileUpdateList.clear();
 	}
 
 	return false;
@@ -697,6 +1042,16 @@ void Application::Render()
 		}
 	}
 
+	// Render projectile
+	for (vector<Projectile*>::iterator it = projectileList.begin(); it != projectileList.end(); ++it)
+	{
+		Projectile* p = *it;
+		if (p->GetActive())
+		{
+			p->Render();
+		}
+	}
+
 	// Render explosion
 	for (vector<Explosion*>::iterator it = explosionList.begin(); it != explosionList.end(); ++it)
 	{
@@ -735,6 +1090,26 @@ bool Application::Loop()
 
 void Application::Shutdown()
 {
+	while (enemyList.size() > 0)
+	{
+		Enemy* e = enemyList.back();
+		if (e)
+		{
+			delete e;
+			enemyList.pop_back();
+		}
+	}
+
+	while (explosionList.size() > 0)
+	{
+		Explosion* e = explosionList.back();
+		if (e)
+		{
+			delete e;
+			explosionList.pop_back();
+		}
+	}
+
 	hge_->System_Shutdown();
 	hge_->Release();
 }
@@ -763,16 +1138,7 @@ void Application::SendScreenSize()
 
 float Application::CalcW(Vector2 dir)
 {
-	if (dir.x == dir.y)
-	{
-		return 0.f;
-	}
-	dir = dir.Normalized();
 	float result = atan2(dir.y, dir.x);
-	if (result < 0)
-	{
-		result += Math::PI;
-	}
 	return result;
 }
 

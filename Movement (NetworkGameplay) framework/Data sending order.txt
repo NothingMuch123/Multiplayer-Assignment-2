@@ -19,3 +19,30 @@ Vel_x
 Vel_y
 Speed
 Health
+
+Order of data for shooting:
+ID
+Type
+X
+Y
+W
+Vel_x
+Vel_y
+Speed
+Damage
+Owner (ID)
+target (ID)
+
+Order of data for updating projectile:
+ID
+Active
+Type
+X
+Y
+W
+Vel_x
+Vel_y
+Speed
+Damage
+Owner (ID)
+target (ID)

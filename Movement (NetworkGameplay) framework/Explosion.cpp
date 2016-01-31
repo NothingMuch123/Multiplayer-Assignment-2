@@ -10,6 +10,7 @@ Explosion::Explosion()
 	{
 		tex = hge->Texture_Load("explosion.png");
 		anim = new hgeAnimation(tex, 30, 30.f, 0, 0, 64, 206 / 3);
+		anim->SetHotSpot(64 * 0.5f, 206 / 6);
 		anim->Stop();
 	}
 	hge->Release();

@@ -20,10 +20,6 @@ GameObject::~GameObject()
 	{
 		sprite.release();
 	}
-
-	HGE* hge = hgeCreate(HGE_VERSION);
-	hge->Texture_Free(tex);
-	hge->Release();
 }
 
 void GameObject::Init(float x, float y, float w, bool active)
@@ -43,7 +39,7 @@ void GameObject::Render()
 {
 	if (active && sprite.get())
 	{
-		sprite->RenderEx(x, y, 0);
+		sprite->RenderEx(x, y, w);
 	}
 }
 

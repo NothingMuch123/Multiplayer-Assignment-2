@@ -49,22 +49,24 @@ void ServerApp::Loop()
 	double dt = (currentTime - prevTime) * 0.001f; // dt is the time difference between last frame and this frame
 	prevTime = currentTime; // After calculating dt, set current time to previous time for next calculation later on
 
-	// Ignore first frame dt
-
 	// Temporary enemy spawning
-	static const float ENEMY_SPAWN_INTERVAL = 5.f;
+	static const float ENEMY_SPAWN_INTERVAL = 2.f;
 	static float spawnEnemyTimer = ENEMY_SPAWN_INTERVAL;
-	if (spawnEnemyTimer < ENEMY_SPAWN_INTERVAL)
+	if (clientList.size() > 0)
 	{
-		spawnEnemyTimer += dt;
-	}
-	else
-	{
-		SpawnEnemy();
-		spawnEnemyTimer = 0.f;
+		if (spawnEnemyTimer < ENEMY_SPAWN_INTERVAL)
+		{
+			spawnEnemyTimer += dt;
+		}
+		else
+		{
+			SpawnEnemy();
+			spawnEnemyTimer = 0.f;
+		}
+
+		UpdateEnemy(dt);
 	}
 
-	UpdateEnemy(dt);
 
 	if (Packet* packet = rakpeer_->Receive())
 	{
@@ -163,7 +165,20 @@ void ServerApp::Loop()
 				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
 			}
 			break;
-
+			// Server does not interfere with shooting
+		case ID_SHOOT:
+		case ID_UPDATE_PROJECTILE:
+			{
+				bs.ResetReadPointer();
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, true);
+			}
+			break;
+		case ID_DESTROY_PROJECTILE:
+			{
+				bs.ResetReadPointer();
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+			}
+			break;
 
 		default:
 			std::cout << "Unhandled Message Identifier: " << (int)msgid << std::endl;
@@ -316,26 +331,25 @@ void ServerApp::SpawnEnemy()
 	{
 		// Universal settings
 		e->active = true;
-		bool left_right = rand() % 2;
-		e->x_ = rand() % (int)S_SPAWN_OFFSET;
-		if (left_right) // Left
+		e->x_ = rand() % (int)(s_screen_width + S_SPAWN_OFFSET * 2.f);
+		e->x_ -= S_SPAWN_OFFSET;
+		if (e->x_ > 0 && e->x_ <= s_screen_width)
 		{
-			e->x_ += -S_SPAWN_OFFSET;
+			// X axis within screen, spawn around offset of y axis only
+			bool up_down = rand() % 2;
+			if (up_down) // Up
+			{
+				e->y_ = (rand() % (int)S_SPAWN_OFFSET) - S_SPAWN_OFFSET;
+			}
+			else // Down
+			{
+				e->y_ = (rand() % (int)S_SPAWN_OFFSET) + s_screen_height;
+			}
 		}
-		else // Right
+		else
 		{
-			e->x_ += s_screen_width;
-		}
-
-		bool up_down = rand() % 2;
-		e->y_ = rand() % (int)S_SPAWN_OFFSET;
-		if (up_down) // Up
-		{
-			e->y_ += -S_SPAWN_OFFSET;
-		}
-		else // Down
-		{
-			e->y_ += s_screen_height;
+			e->y_ = rand() % (int)(s_screen_height + S_SPAWN_OFFSET * 2.f);
+			e->y_ -= S_SPAWN_OFFSET;
 		}
 		
 		Vector2 dir = (Vector2(s_screen_width, s_screen_height) - Vector2(e->x_, e->y_)).Normalized();
@@ -392,7 +406,7 @@ void ServerApp::UpdateEnemy(double dt)
 		if (e->active)
 		{
 			// Update active enemy
-			Vector2 newPos = Vector2::MoveToPoint(Vector2(e->x_, e->y_), Vector2(s_screen_width * 0.5f - 32.f, s_screen_height * 0.5f - 32.f), e->speed * dt);
+			Vector2 newPos = Vector2::MoveToPoint(Vector2(e->x_, e->y_), Vector2(s_screen_width * 0.5f, s_screen_height * 0.5f), e->speed * dt);
 			e->x_ = newPos.x;
 			e->y_ = newPos.y;
 
@@ -405,7 +419,7 @@ void ServerApp::UpdateEnemy(double dt)
 
 			rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
 
-			if (newPos == Vector2(s_screen_width * 0.5f - 32.f, s_screen_height * 0.5f - 32.f))
+			if (newPos == Vector2(s_screen_width * 0.5f, s_screen_height * 0.5f))
 			{
 				// Send data to everyone
 				RakNet::BitStream bs2;
