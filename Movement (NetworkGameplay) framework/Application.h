@@ -8,6 +8,9 @@
 // Enemies
 #include "Enemy.h"
 
+// Animation
+#include "Explosion.h"
+
 using std::vector;
 
 class HGE;
@@ -42,6 +45,11 @@ private:
 	vector<Enemy*> enemyList;
 	Enemy* FindEnemyByID(int id);
 	void InitEnemyList();
+
+	// Explosion
+	vector<Explosion*> explosionList;
+	void InitExplosionList();
+	Explosion* FetchExplosion();
 	
 	// Lab 13 Task 1 : add variables for local missle
 	Missile* mymissile; // This player's missle

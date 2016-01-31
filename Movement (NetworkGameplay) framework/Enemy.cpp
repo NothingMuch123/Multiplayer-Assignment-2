@@ -21,7 +21,6 @@ void Enemy::Init(ENEMY_TYPE type, float x, float y, float w, bool active)
 
 	// Set up default values
 	this->type = type;
-	destination.Set(Application::S_SCREEN_WIDTH * 0.5f, Application::S_SCREEN_HEIGHT * 0.5f);
 	visibility = -1;
 
 	// Load sprite
@@ -50,6 +49,8 @@ void Enemy::Init(ENEMY_TYPE type, float x, float y, float w, bool active)
 			break;
 		}
 	}
+
+	destination.Set(Application::S_SCREEN_WIDTH * 0.5f - 32.f, Application::S_SCREEN_HEIGHT * 0.5f - 32.f);
 
 	hge->Release();
 }

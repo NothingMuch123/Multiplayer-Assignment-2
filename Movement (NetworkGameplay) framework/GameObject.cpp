@@ -43,7 +43,7 @@ void GameObject::Render()
 {
 	if (active && sprite.get())
 	{
-		sprite->RenderEx(x, y, w);
+		sprite->RenderEx(x, y, 0);
 	}
 }
 

@@ -1,18 +1,18 @@
-﻿Build started 31/1/2016 12:08:16 AM.
+﻿Build started 31/1/2016 2:48:37 PM.
      1>Project "C:\Users\Koh Fang Shu\Desktop\Multiplayer-Assignment-2\Movement (NetworkGameplay) framework\MovementServer\MovementServer.vcxproj" on node 3 (Rebuild target(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I..\RakNet\Source /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\Vector2.cpp Server.cpp ServerApp.cpp
          ServerApp.cpp
      1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(21): warning C4244: '=' : conversion from 'RakNetTime' to 'double', possible loss of data
      1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(23): warning C4244: 'argument' : conversion from 'time_t' to 'unsigned int', possible loss of data
-     1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(54): warning C4244: 'initializing' : conversion from 'RakNetTime' to 'double', possible loss of data
-     1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(308): warning C4800: 'int' : forcing value to bool 'true' or 'false' (performance warning)
-     1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(309): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(48): warning C4244: 'initializing' : conversion from 'RakNetTime' to 'double', possible loss of data
+     1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(59): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
      1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(319): warning C4800: 'int' : forcing value to bool 'true' or 'false' (performance warning)
      1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(320): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
-     1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(330): warning C4244: 'argument' : conversion from 'int' to 'float', possible loss of data
-     1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(384): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
-     1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(385): warning C4244: '+=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(330): warning C4800: 'int' : forcing value to bool 'true' or 'false' (performance warning)
+     1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(331): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(341): warning C4244: 'argument' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\koh fang shu\desktop\multiplayer-assignment-2\movement (networkgameplay) framework\movementserver\serverapp.cpp(395): warning C4244: 'argument' : conversion from 'double' to 'float', possible loss of data
          Server.cpp
          Vector2.cpp
          Generating Code...
@@ -74,4 +74,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:02.10
+Time Elapsed 00:00:02.12

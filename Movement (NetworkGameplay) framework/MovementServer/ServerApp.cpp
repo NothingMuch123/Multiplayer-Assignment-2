@@ -44,16 +44,27 @@ ServerApp::~ServerApp()
 
 void ServerApp::Loop()
 {
-	static bool done = false;
-	if (!done)
-	{
-		SpawnEnemy();
-		done = true;
-	}
 
 	double currentTime = RakNet::GetTime(); // Current time by raknet
-	double dt = currentTime - prevTime; // dt is the time difference between last frame and this frame
+	double dt = (currentTime - prevTime) * 0.001f; // dt is the time difference between last frame and this frame
 	prevTime = currentTime; // After calculating dt, set current time to previous time for next calculation later on
+
+	// Ignore first frame dt
+
+	// Temporary enemy spawning
+	static const float ENEMY_SPAWN_INTERVAL = 5.f;
+	static float spawnEnemyTimer = ENEMY_SPAWN_INTERVAL;
+	if (spawnEnemyTimer < ENEMY_SPAWN_INTERVAL)
+	{
+		spawnEnemyTimer += dt;
+	}
+	else
+	{
+		SpawnEnemy();
+		spawnEnemyTimer = 0.f;
+	}
+
+	UpdateEnemy(dt);
 
 	if (Packet* packet = rakpeer_->Receive())
 	{
@@ -149,7 +160,7 @@ void ServerApp::Loop()
 				bs.Read(id);
 				ResetEnemy(id);
 				bs.ResetReadPointer();
-				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
 			}
 			break;
 
@@ -381,8 +392,9 @@ void ServerApp::UpdateEnemy(double dt)
 		if (e->active)
 		{
 			// Update active enemy
-			e->x_ += e->vel_x * dt;
-			e->y_ += e->vel_y * dt;
+			Vector2 newPos = Vector2::MoveToPoint(Vector2(e->x_, e->y_), Vector2(s_screen_width * 0.5f - 32.f, s_screen_height * 0.5f - 32.f), e->speed * dt);
+			e->x_ = newPos.x;
+			e->y_ = newPos.y;
 
 			// Send data to everyone
 			RakNet::BitStream bs;
@@ -392,6 +404,22 @@ void ServerApp::UpdateEnemy(double dt)
 			bs.Write(e->y_);
 
 			rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+
+			if (newPos == Vector2(s_screen_width * 0.5f - 32.f, s_screen_height * 0.5f - 32.f))
+			{
+				// Send data to everyone
+				RakNet::BitStream bs2;
+				bs2.Write((unsigned char)ID_DESTROY_ENEMY);
+				bs2.Write(e->id);
+
+				rakpeer_->Send(&bs2, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+
+				e->Reset();
+			}
+			//e->x_ += e->vel_x * dt;
+			//e->y_ += e->vel_y * dt;
+
+
 		}
 	}
 }

@@ -84,6 +84,28 @@ void Application::InitEnemyList()
 	}
 }
 
+void Application::InitExplosionList()
+{
+	for (int i = 0; i < 20; ++i)
+	{
+		Explosion* explosion = new Explosion();
+		explosionList.push_back(explosion);
+	}
+}
+
+Explosion * Application::FetchExplosion()
+{
+	for (vector<Explosion*>::iterator it = explosionList.begin(); it != explosionList.end(); ++it)
+	{
+		Explosion* e = *it;
+		if (!e->isActive())
+		{
+			return e;
+		}
+	}
+	return nullptr;
+}
+
 bool Application::Init()
 {
 	std::ifstream inData;	
@@ -106,7 +128,8 @@ bool Application::Init()
 
 	if(hge_->System_Initiate()) 
 	{
-		ships_.push_back(new Ship(rand()%3+1, rand() % 500 + 100, rand() % 400 + 100));
+		ships_.push_back(new Ship(rand() % 3 + 1, S_SCREEN_WIDTH * 0.5f, S_SCREEN_HEIGHT * 0.5f));
+		//ships_.push_back(new Ship(rand() % 3 + 1, rand() % 500 + 100, rand() % 400 + 100));
 		ships_.at(0)->SetName("My Ship");
 		if (rakpeer_->Startup(1,30,&SocketDescriptor(), 1))
 		{
@@ -210,7 +233,7 @@ bool Application::Update()
 	}
 
 	// Update enemies
-	for (vector<Enemy*>::iterator it = enemyList.begin(); it != enemyList.end(); ++it)
+	/*for (vector<Enemy*>::iterator it = enemyList.begin(); it != enemyList.end(); ++it)
 	{
 		Enemy* e = *it;
 		if (e->GetActive())
@@ -223,6 +246,16 @@ bool Application::Update()
 				bs.Write(e->GetID());
 				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
 			}
+		}
+	}*/
+
+	// Update explosions
+	for (vector<Explosion*>::iterator it = explosionList.begin(); it != explosionList.end(); ++it)
+	{
+		Explosion* e = *it;
+		if (e->isActive())
+		{
+			e->Update(timedelta);
 		}
 	}
 
@@ -249,6 +282,7 @@ bool Application::Update()
 				std::cout << "Connected to Server" << std::endl;
 				SendScreenSize();
 				InitEnemyList();
+				InitExplosionList();
 			}
 			break;
 
@@ -547,8 +581,17 @@ bool Application::Update()
 				int id;
 				bs.Read(id);
 				Enemy* e = FindEnemyByID(id);
+
 				if (e)
 				{
+					// Spawn explosion
+					Explosion* ex = FetchExplosion();
+					if (ex)
+					{
+						ex->Init(e->GetX(), e->GetY());
+					}
+
+					// Reset enemy
 					e->Reset();
 				}
 			}
@@ -648,7 +691,20 @@ void Application::Render()
 	for (vector<Enemy*>::iterator it = enemyList.begin(); it != enemyList.end(); ++it)
 	{
 		Enemy* e = *it;
-		e->Render();
+		if (e->GetActive())
+		{
+			e->Render();
+		}
+	}
+
+	// Render explosion
+	for (vector<Explosion*>::iterator it = explosionList.begin(); it != explosionList.end(); ++it)
+	{
+		Explosion* e = *it;
+		if (e->isActive())
+		{
+			e->Render();
+		}
 	}
 
 
@@ -701,7 +757,7 @@ void Application::SendScreenSize()
 	BS_ScreenRes.Write((unsigned char)ID_SET_SCREEN_TO_SERVER);
 	BS_ScreenRes.Write(S_SCREEN_WIDTH);
 	BS_ScreenRes.Write(S_SCREEN_HEIGHT);
-	rakpeer_->Send(&BS_ScreenRes, HIGH_PRIORITY, RELIABLE, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+	rakpeer_->Send(&BS_ScreenRes, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
 	std::cout << "Sent screen size" << std::endl;
 }
 
@@ -712,7 +768,12 @@ float Application::CalcW(Vector2 dir)
 		return 0.f;
 	}
 	dir = dir.Normalized();
-	return atan2(dir.y, dir.x);
+	float result = atan2(dir.y, dir.x);
+	if (result < 0)
+	{
+		result += Math::PI;
+	}
+	return result;
 }
 
 bool Application::SendInitialPosition()

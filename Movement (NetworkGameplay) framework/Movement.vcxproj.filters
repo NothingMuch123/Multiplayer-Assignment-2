@@ -15,6 +15,12 @@
     <Filter Include="GameObject">
       <UniqueIdentifier>{c28fc92f-6c99-48a9-8bd3-bbb9114f172c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Projectile">
+      <UniqueIdentifier>{3b8ca2df-44d7-4bf6-828d-98a4e6a4ec69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Explosion">
+      <UniqueIdentifier>{24b683a0-f6d1-4b7d-9020-b6bafcf196fd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp">
@@ -36,6 +42,12 @@
       <Filter>Enemy</Filter>
     </ClCompile>
     <ClCompile Include="Vector2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Explosion.cpp">
+      <Filter>Explosion</Filter>
+    </ClCompile>
+    <ClCompile Include="Projectile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -65,6 +77,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MyMath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Explosion.h">
+      <Filter>Explosion</Filter>
+    </ClInclude>
+    <ClInclude Include="Projectile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
