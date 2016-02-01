@@ -126,6 +126,9 @@ private:
 	ServerEnemy* FetchEnemy();
 	ServerEnemy* FindEnemyByID(unsigned int id);
 
+	// Misc data
+	int base_hp;
+
 public:
 	ServerApp();
 	~ServerApp();

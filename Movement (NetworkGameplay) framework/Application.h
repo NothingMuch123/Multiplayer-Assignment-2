@@ -4,6 +4,7 @@
 #include "ship.h"
 #include "missile.h"
 #include <vector>
+#include <string>
 
 // Enemies
 #include "Enemy.h"
@@ -15,6 +16,7 @@
 #include "Projectile.h"
 
 using std::vector;
+using std::string;
 
 class HGE;
 class RakPeerInterface;
@@ -55,7 +57,13 @@ private:
 	int base_hp;
 	hgeSprite* base;
 	HTEXTURE baseTex;
+	hgeFont* f_base_hp;
 	void InitBase();
+
+	// Score
+	hgeFont* p1_score;
+	hgeFont* p2_score;
+	void InitScore();
 
 	// Enemy
 	vector<Enemy*> enemyList;

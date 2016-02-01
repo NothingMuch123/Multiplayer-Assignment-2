@@ -10,6 +10,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include "hgefont.h"
 
 const float Application::S_BULLET_SHOOT_INTERVAL = 0.5f;
 const float Application::S_MISSILE_SHOOT_INTERVAL = 1.f;;
@@ -34,16 +35,21 @@ float GetAbsoluteMag( float num )
 * Creates an instance of the graphics engine and network engine
 */
 
-Application::Application() 
-:	hge_(hgeCreate(HGE_VERSION))
-,	rakpeer_(RakNetworkFactory::GetRakPeerInterface())
-,	timer_( 0 )
-// Lab 13 Task 2 : add new initializations
-, mymissile(NULL)
-, keydown_enter(false)
-, bulletShootTimer(S_BULLET_SHOOT_INTERVAL)
-, missileShootTimer(S_MISSILE_SHOOT_INTERVAL)
-, background(nullptr)
+Application::Application()
+	: hge_(hgeCreate(HGE_VERSION))
+	, rakpeer_(RakNetworkFactory::GetRakPeerInterface())
+	, timer_(0)
+	// Lab 13 Task 2 : add new initializations
+	, mymissile(NULL)
+	, keydown_enter(false)
+	, bulletShootTimer(S_BULLET_SHOOT_INTERVAL)
+	, missileShootTimer(S_MISSILE_SHOOT_INTERVAL)
+	, background(nullptr)
+	, base(nullptr)
+	, base_hp(5)
+	, f_base_hp(nullptr)
+	, p1_score(nullptr)
+	, p2_score(nullptr)
 {
 }
 
@@ -76,6 +82,19 @@ void Application::InitBase()
 	base_hp = 5;
 	baseTex = hge_->Texture_Load("moon.png");
 	base = new hgeSprite(baseTex, 0, 0, 100, 101);
+	base->SetHotSpot(50, 50.5);
+
+	f_base_hp = new hgeFont("font1.fnt");
+	f_base_hp->SetScale(3);
+}
+
+void Application::InitScore()
+{
+	p1_score = new hgeFont("font1.fnt");
+	p1_score->SetScale(1.5);
+
+	p2_score = new hgeFont("font1.fnt");
+	p2_score->SetScale(1.5);
 }
 
 Enemy * Application::FindEnemyByID(int id)
@@ -397,7 +416,7 @@ bool Application::Update()
 	}
 
 	// Lab 13 Task 5 : Updating the missile
-	if (mymissile)
+	/*if (mymissile)
 	{
 		if (mymissile->Update(ships_, timedelta))
 		{
@@ -405,10 +424,10 @@ bool Application::Update()
 			delete mymissile;
 			mymissile = 0;
 		}
-	}
+	}*/
 
 	// Lab 13 Task 13 : Update network missiles
-	for (MissileList::iterator missile = missiles_.begin(); missile != missiles_.end(); missile++)
+	/*for (MissileList::iterator missile = missiles_.begin(); missile != missiles_.end(); missile++)
 	{
 		if ((*missile)->Update(ships_, timedelta))
 		{
@@ -417,7 +436,7 @@ bool Application::Update()
 			missiles_.erase(missile);
 			break;
 		}
-	}
+	}*/
 
 	// Update enemies
 	/*for (vector<Enemy*>::iterator it = enemyList.begin(); it != enemyList.end(); ++it)
@@ -464,22 +483,25 @@ bool Application::Update()
 							int newHP = e->Injure(p->GetDamage());
 							if (newHP <= 0)
 							{
+								// Add score to player
+								p->GetOwner()->AddScore(100);
+
 								// Destroy enemy
 								DestroyEnemy(e);
 
 								// Send to server to destroy enemy
 								RakNet::BitStream bs;
 								bs.ResetWritePointer();
-								bs.Write(ID_DESTROY_ENEMY);
+								bs.Write((unsigned char)ID_DESTROY_ENEMY);
 								bs.Write(e->GetID());
-								rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+								rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
 							}
 							else
 							{
 								// Send to server to injure enemy
 								RakNet::BitStream bs;
 								bs.ResetWritePointer();
-								bs.Write(ID_INJURE_ENEMY);
+								bs.Write((unsigned char)ID_INJURE_ENEMY);
 								bs.Write(e->GetID());
 								bs.Write(e->GetHP());
 								rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
@@ -488,7 +510,7 @@ bool Application::Update()
 							// Reset projectile
 							p->Reset();
 							bs.ResetWritePointer();
-							bs.Write(ID_DESTROY_PROJECTILE);
+							bs.Write((unsigned char)ID_DESTROY_PROJECTILE);
 							bs.Write(p->GetID());
 							rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
 						}
@@ -573,6 +595,8 @@ bool Application::Update()
 				InitExplosionList();
 				InitProjectileList();
 				InitBackground();
+				InitBase();
+				InitScore();
 			}
 			break;
 
@@ -644,6 +668,9 @@ bool Application::Update()
 						e->SetHP(hp);
 					}
 				}
+				
+				// Base hp
+				bs.Read(base_hp);
 
 				SendInitialPosition();
 			}
@@ -986,12 +1013,22 @@ bool Application::Update()
 				}
 			}
 			break;
+		case ID_UPDATE_BASE:
+			{
+				bs.Read(base_hp);
+			}
+			break;
 
 		default:
 			std::cout << "Unhandled Message Identifier: " << (int)msgid << std::endl;
 
 		}
 		rakpeer_->DeallocatePacket(packet);
+	}
+
+	if (base_hp <= 0)
+	{
+		return true;
 	}
 
 	// Send projectile updates
@@ -1139,6 +1176,12 @@ void Application::Render()
 		background->Render(0, 0);
 	}
 
+	// Base
+	if (base)
+	{
+		base->Render(S_SCREEN_WIDTH * 0.5f, S_SCREEN_HEIGHT * 0.5f);
+	}
+
 	ShipList::iterator itr;
 	for (itr = ships_.begin(); itr != ships_.end(); itr++)
 	{
@@ -1188,6 +1231,23 @@ void Application::Render()
 		}
 	}
 
+	// Base hp
+	if (f_base_hp)
+	{
+		f_base_hp->Render(S_SCREEN_WIDTH * 0.5f, S_SCREEN_HEIGHT * 0.1f, HGETEXT_CENTER, std::to_string(base_hp).c_str());
+	}
+
+	// Score
+	if (p1_score)
+	{
+		string score = "Your score: " + std::to_string(ships_.at(0)->GetScore());
+		p1_score->Render(S_SCREEN_WIDTH * 0.25f, S_SCREEN_HEIGHT * 0.1f, HGETEXT_CENTER, score.c_str());
+	}
+	if (p2_score && ships_.size() > 1)
+	{
+		string score = "Other score: " + std::to_string(ships_.at(1)->GetScore());
+		p1_score->Render(S_SCREEN_WIDTH * 0.75f, S_SCREEN_HEIGHT * 0.1f, HGETEXT_CENTER, score.c_str());
+	}
 
 	hge_->Gfx_EndScene();
 }

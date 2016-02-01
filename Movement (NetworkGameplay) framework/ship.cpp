@@ -33,6 +33,7 @@ Ship::Ship(int type, float locx_, float locy_)
 ,	server_velx_(0)
 ,	server_vely_(0)
 ,	ratio_(1)
+,	score(0)
 #endif
 {
 
@@ -260,6 +261,11 @@ void Ship::SetName(const char * text)
 {
 	mytext_.clear();
 	mytext_ = text;
+}
+
+void Ship::AddScore(int score)
+{
+	this->score += score;
 }
 
 hgeRect* Ship::GetBoundingBox()

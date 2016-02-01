@@ -31,6 +31,9 @@ enum MyMsgIDs
 	// Explosion
 	ID_NEW_EXPLOSION,
 	ID_END_EXPLOSION,
+
+	// Base
+	ID_UPDATE_BASE,
 };
 
 #endif

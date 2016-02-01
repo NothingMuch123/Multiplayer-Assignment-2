@@ -50,6 +50,7 @@ class Ship
 	unsigned int id;
 	int type_;
 	float angular_velocity;
+	int score;
 
 	unsigned int collidetimer;
 public:
@@ -60,6 +61,9 @@ public:
 	void Render();
 	void Accelerate(float acceleration, float timedelta);
 	void SetName(const char * text);
+
+	void AddScore(int score);
+	int GetScore() { return score; }
 	
 	hgeRect* GetBoundingBox();
 	bool HasCollided( Ship *ship );

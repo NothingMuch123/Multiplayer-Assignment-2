@@ -23,6 +23,7 @@ ServerApp::ServerApp() :
 	Math::InitRNG();
 
 	InitEnemyList();
+	base_hp = 5;
 }
 
 ServerApp::~ServerApp()
@@ -44,14 +45,18 @@ ServerApp::~ServerApp()
 
 bool ServerApp::Loop()
 {
-
+	static float timeSinceStart = 0.f;
 	double currentTime = RakNet::GetTime(); // Current time by raknet
 	double dt = (currentTime - prevTime) * 0.001f; // dt is the time difference between last frame and this frame
 	prevTime = currentTime; // After calculating dt, set current time to previous time for next calculation later on
 
-	// Temporary enemy spawning
+	timeSinceStart += dt;
+
+	// Enemy spawning
 	static const float ENEMY_SPAWN_INTERVAL = 2.f;
+	static int enemy_spawn_count = 1;
 	static float spawnEnemyTimer = ENEMY_SPAWN_INTERVAL;
+	enemy_spawn_count = (timeSinceStart * 0.1f) + 1;
 	if (clientList.size() > 0)
 	{
 		if (spawnEnemyTimer < ENEMY_SPAWN_INTERVAL)
@@ -60,7 +65,10 @@ bool ServerApp::Loop()
 		}
 		else
 		{
-			SpawnEnemy();
+			for (int i = 0; i < enemy_spawn_count; ++i)
+			{
+				SpawnEnemy();
+			}
 			spawnEnemyTimer = 0.f;
 		}
 
@@ -218,6 +226,11 @@ bool ServerApp::Loop()
 
 		rakpeer_->DeallocatePacket(packet);
 	}
+
+	if (base_hp <= 0)
+	{
+		return true;
+	}
 	return false;
 }
 
@@ -255,6 +268,8 @@ void ServerApp::SendWelcomePackage(SystemAddress& addr)
 		bs.Write(e->speed);
 		bs.Write(e->hp);
 	}
+
+	bs.Write(base_hp);
 
 	rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED,0, addr, false);
 
@@ -438,16 +453,6 @@ void ServerApp::UpdateEnemy(double dt)
 		ServerEnemy* e = *it;
 		if (e->active)
 		{
-			/*if (e->speed == 0.f)
-			{
-				e->Reset();
-				RakNet::BitStream bs;
-				bs.Write((unsigned char)ID_DESTROY_ENEMY);
-				bs.Write(e->id);
-				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
-				continue;
-			}*/
-
 			// Update active enemy
 			Vector2 newPos = Vector2::MoveToPoint(Vector2(e->x_, e->y_), Vector2(s_screen_width * 0.5f, s_screen_height * 0.5f), e->speed * dt);
 			e->x_ = newPos.x;
@@ -465,17 +470,20 @@ void ServerApp::UpdateEnemy(double dt)
 				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
 
 				// Send reset data to everyone
-				RakNet::BitStream bs2;
-				bs2.Write((unsigned char)ID_DESTROY_ENEMY);
-				bs2.Write(e->id);
-				rakpeer_->Send(&bs2, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+				bs.ResetWritePointer();
+				bs.Write((unsigned char)ID_DESTROY_ENEMY);
+				bs.Write(e->id);
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+
+				// Update base hp
+				--base_hp;
+				bs.ResetWritePointer();
+				bs.Write((unsigned char)ID_UPDATE_BASE);
+				bs.Write(base_hp);
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
 
 				e->Reset();
 			}
-			//e->x_ += e->vel_x * dt;
-			//e->y_ += e->vel_y * dt;
-
-
 		}
 	}
 }
