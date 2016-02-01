@@ -13,7 +13,7 @@ class RakPeerInterface;
 struct ServerGameObject 
 {
 	ServerGameObject(unsigned int newid)
-	: x_(0), y_(0), type_(1), active(false)
+	: x_(0), y_(0), type_(1), active(false), score(0)
 	{
 		id = newid;
 	}
@@ -31,6 +31,7 @@ struct ServerGameObject
 	float y_;
 	int type_;
 	bool active;
+	int score;
 };
 
 struct ServerVelocityObject : ServerGameObject
@@ -128,6 +129,8 @@ private:
 
 	// Misc data
 	int base_hp;
+	int p1_score;
+	int p2_score;
 
 public:
 	ServerApp();

@@ -34,6 +34,9 @@ enum MyMsgIDs
 
 	// Base
 	ID_UPDATE_BASE,
+
+	// Score
+	ID_UPDATE_SCORE,
 };
 
 #endif

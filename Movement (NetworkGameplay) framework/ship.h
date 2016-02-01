@@ -63,6 +63,7 @@ public:
 	void SetName(const char * text);
 
 	void AddScore(int score);
+	void SetScore(int score) { this->score = score; }
 	int GetScore() { return score; }
 	
 	hgeRect* GetBoundingBox();

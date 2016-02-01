@@ -75,7 +75,7 @@ bool ServerApp::Loop()
 		UpdateEnemy(dt);
 	}
 
-	static const int SYNCS_PER_SEC = 10;
+	static const int SYNCS_PER_SEC = 5;
 	static const float TIME_PER_SYNC = 1 / SYNCS_PER_SEC;
 	static float enemySyncTimer = TIME_PER_SYNC;
 	if (enemySyncTimer < TIME_PER_SYNC)
@@ -215,6 +215,20 @@ bool ServerApp::Loop()
 			break;
 		case ID_DESTROY_PROJECTILE:
 			{
+				bs.ResetReadPointer();
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, packet->systemAddress, true);
+			}
+			break;
+		case ID_UPDATE_SCORE:
+			{
+				int score, id;
+				bs.Read(id);
+				bs.Read(score);
+				ClientMap::iterator it = clients_.find(packet->systemAddress);
+				if (it == clients_.end())
+					break;
+
+				it->second.score = score;
 				bs.ResetReadPointer();
 				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, packet->systemAddress, true);
 			}

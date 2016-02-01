@@ -483,14 +483,19 @@ bool Application::Update()
 							int newHP = e->Injure(p->GetDamage());
 							if (newHP <= 0)
 							{
+								RakNet::BitStream bs;
 								// Add score to player
 								p->GetOwner()->AddScore(100);
+
+								bs.Write((unsigned char)ID_UPDATE_SCORE);
+								bs.Write(p->GetOwner()->GetID());
+								bs.Write(p->GetOwner()->GetScore());
+								rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
 
 								// Destroy enemy
 								DestroyEnemy(e);
 
 								// Send to server to destroy enemy
-								RakNet::BitStream bs;
 								bs.ResetWritePointer();
 								bs.Write((unsigned char)ID_DESTROY_ENEMY);
 								bs.Write(e->GetID());
@@ -1016,6 +1021,18 @@ bool Application::Update()
 		case ID_UPDATE_BASE:
 			{
 				bs.Read(base_hp);
+			}
+			break;
+		case ID_UPDATE_SCORE:
+			{
+				int id, score;
+				bs.Read(id);
+				Ship* s = FindShipByID(id);
+				if (s)
+				{
+					bs.Read(score);
+					s->SetScore(score);
+				}
 			}
 			break;
 
