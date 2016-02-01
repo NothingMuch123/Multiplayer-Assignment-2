@@ -43,6 +43,7 @@ Application::Application()
 , keydown_enter(false)
 , bulletShootTimer(S_BULLET_SHOOT_INTERVAL)
 , missileShootTimer(S_MISSILE_SHOOT_INTERVAL)
+, background(nullptr)
 {
 }
 
@@ -63,6 +64,19 @@ Application::~Application() throw()
 * Initialises the graphics system
 * It should also initialise the network system
 */
+
+void Application::InitBackground()
+{
+	bgTex = hge_->Texture_Load("bg1.png");
+	background = new hgeSprite(bgTex, 0, 0, S_SCREEN_WIDTH, S_SCREEN_HEIGHT);
+}
+
+void Application::InitBase()
+{
+	base_hp = 5;
+	baseTex = hge_->Texture_Load("moon.png");
+	base = new hgeSprite(baseTex, 0, 0, 100, 101);
+}
 
 Enemy * Application::FindEnemyByID(int id)
 {
@@ -89,20 +103,18 @@ void Application::InitEnemyList()
 
 void Application::DestroyEnemy(Enemy * e)
 {
-	// Spawn explosion
-	Explosion* ex = FetchExplosion();
-	if (ex)
+	if (e->GetActive())
 	{
-		ex->Init(e->GetX(), e->GetY());
-	}
+		// Spawn explosion
+		Explosion* ex = FetchExplosion();
+		if (ex)
+		{
+			ex->Init(e->GetX(), e->GetY());
 
-	// Reset enemy
-	e->Reset();
-	RakNet::BitStream bs;
-	bs.ResetWritePointer();
-	bs.Write(ID_DESTROY_ENEMY);
-	bs.Write(e->GetID());
-	rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+			// Reset enemy
+			e->Reset();
+		}
+	}
 }
 
 void Application::InitExplosionList()
@@ -449,7 +461,29 @@ bool Application::Update()
 						bool collision = p->CollideWith(e);
 						if (collision)
 						{
-							DestroyEnemy(e);
+							int newHP = e->Injure(p->GetDamage());
+							if (newHP <= 0)
+							{
+								// Destroy enemy
+								DestroyEnemy(e);
+
+								// Send to server to destroy enemy
+								RakNet::BitStream bs;
+								bs.ResetWritePointer();
+								bs.Write(ID_DESTROY_ENEMY);
+								bs.Write(e->GetID());
+								rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+							}
+							else
+							{
+								// Send to server to injure enemy
+								RakNet::BitStream bs;
+								bs.ResetWritePointer();
+								bs.Write(ID_INJURE_ENEMY);
+								bs.Write(e->GetID());
+								bs.Write(e->GetHP());
+								rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+							}
 
 							// Reset projectile
 							p->Reset();
@@ -538,6 +572,7 @@ bool Application::Update()
 				InitEnemyList();
 				InitExplosionList();
 				InitProjectileList();
+				InitBackground();
 			}
 			break;
 
@@ -831,6 +866,18 @@ bool Application::Update()
 				}
 			}
 			break;
+		case ID_INJURE_ENEMY:
+			{
+				int id, hp;
+				bs.Read(id);
+				Enemy* e = FindEnemyByID(id);
+				if (e && e->GetActive())
+				{
+					bs.Read(hp);
+					e->SetHP(hp);
+				}
+			}
+			break;
 		case ID_DESTROY_ENEMY:
 			{
 				int id;
@@ -906,7 +953,11 @@ bool Application::Update()
 					Ship* sOwner = FindShipByID(owner);
 					if (sOwner)
 					{
-						p->Init(sOwner, type, x, y, sOwner->GetW(), active);
+						p->SetOwner(sOwner);
+						p->SetType(type);
+						p->SetX(x);
+						p->SetY(y);
+						p->SetActive(active);
 						p->SetVelocityX(vel_x);
 						p->SetVelocityY(vel_y);
 						p->SetSpeed(speed);
@@ -928,7 +979,7 @@ bool Application::Update()
 				int id;
 				bs.Read(id);
 				Projectile* p = FindProjectileByID(id);
-				if (p)
+				if (p && p->GetActive())
 				{
 					// Reset projectile
 					p->Reset();
@@ -942,6 +993,49 @@ bool Application::Update()
 		}
 		rakpeer_->DeallocatePacket(packet);
 	}
+
+	// Send projectile updates
+	/*static const int SYNCS_PER_SEC = 24;
+	static const float TIME_PER_SYNC = 1 / SYNCS_PER_SEC;
+	static float projSendTimer = TIME_PER_SYNC;
+	if (projSendTimer < TIME_PER_SYNC)
+	{
+		projSendTimer += timedelta;
+	}
+	else
+	{
+		for (vector<Projectile*>::iterator it = projectileList.begin(); it != projectileList.end(); ++it)
+		{
+			Projectile* p = *it;
+			if (p->GetActive() && p->GetOwner() == ships_.at(0))
+			{
+				RakNet::BitStream sendProj;
+				sendProj.Write((unsigned char)ID_UPDATE_PROJECTILE);
+				sendProj.Write(p->GetID());
+				sendProj.Write(p->GetActive());
+				sendProj.Write(p->GetType());
+				sendProj.Write(p->GetX());
+				sendProj.Write(p->GetY());
+				sendProj.Write(p->GetVelocityX());
+				sendProj.Write(p->GetVelocityY());
+				sendProj.Write(p->GetSpeed());
+				sendProj.Write(p->GetDamage());
+				sendProj.Write(p->GetOwner()->GetID());
+				// Send target id if available
+				if (p->GetTarget())
+				{
+					sendProj.Write(p->GetTarget()->GetID());
+				}
+				else
+				{
+					sendProj.Write(-1);
+				}
+				rakpeer_->Send(&sendProj, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+				std::cout << p->GetX() << " | " << p->GetY() << std::endl;
+			}
+		}
+		projSendTimer = 0.f;
+	}*/
 
 	// Send data
 	float timeToSync = 1000 / 24; // Sync 24 times in a second (Millisecond)
@@ -993,7 +1087,7 @@ bool Application::Update()
 		}*/
 
 		// Send update projectile
-		for (int i = 0; i < projectileUpdateList.size(); ++i)
+		/*for (int i = 0; i < projectileUpdateList.size(); ++i)
 		{
 			Projectile* p = projectileList[i];
 			if (p && p->GetActive())
@@ -1022,7 +1116,7 @@ bool Application::Update()
 				rakpeer_->Send(&sendProj, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
 			}
 		}
-		projectileUpdateList.clear();
+		projectileUpdateList.clear();*/
 	}
 
 	return false;
@@ -1038,6 +1132,12 @@ void Application::Render()
 {
 	hge_->Gfx_BeginScene();  
 	hge_->Gfx_Clear(0);
+
+	// Background
+	if (background)
+	{
+		background->Render(0, 0);
+	}
 
 	ShipList::iterator itr;
 	for (itr = ships_.begin(); itr != ships_.end(); itr++)
@@ -1136,6 +1236,22 @@ void Application::Shutdown()
 		}
 	}
 
+	while (projectileList.size() > 0)
+	{
+		Projectile* p = projectileList.back();
+		if (p)
+		{
+			delete p;
+			projectileList.pop_back();
+		}
+	}
+
+	if (background)
+	{
+		delete background;
+		background = nullptr;
+	}
+
 	hge_->System_Shutdown();
 	hge_->Release();
 }
@@ -1148,6 +1264,7 @@ void Application::Start()
 	if (Init())
 	{
 		hge_->System_Start();
+		Math::InitRNG();
 	}
 }
 

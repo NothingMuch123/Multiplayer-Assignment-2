@@ -23,6 +23,8 @@ public:
 	virtual void Render();
 	virtual void Reset();
 
+	int Injure(int damage);
+
 	// Setters and Getters
 	void SetHP(int hp);
 	int GetHP();

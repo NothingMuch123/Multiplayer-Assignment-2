@@ -20,7 +20,7 @@ ServerApp::ServerApp() :
 	std::cout << "Server Started" << std::endl;
 	prevTime = RakNet::GetTime();
 
-	srand(time(NULL));
+	Math::InitRNG();
 
 	InitEnemyList();
 }
@@ -42,7 +42,7 @@ ServerApp::~ServerApp()
 	}
 }
 
-void ServerApp::Loop()
+bool ServerApp::Loop()
 {
 
 	double currentTime = RakNet::GetTime(); // Current time by raknet
@@ -169,13 +169,32 @@ void ServerApp::Loop()
 				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, packet->systemAddress, true);
 			}
 			break;
+		case ID_INJURE_ENEMY:
+			{
+				int id, hp;
+				bs.Read(id);
+				ServerEnemy* e = FindEnemyByID(id);
+				if (e && e->active)
+				{
+					bs.Read(hp);
+					e->hp = hp;
+				}
+
+				bs.ResetReadPointer();
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, packet->systemAddress, true);
+			}
+			break;
 		case ID_DESTROY_ENEMY:
 			{
 				int id;
 				bs.Read(id);
-				ResetEnemy(id);
-				bs.ResetReadPointer();
-				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, packet->systemAddress, true);
+				ServerEnemy* e = FindEnemyByID(id);
+				if (e->active)
+				{
+					ResetEnemy(id);
+					bs.ResetReadPointer();
+					rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, packet->systemAddress, true);
+				}
 			}
 			break;
 			// Server does not interfere with shooting
@@ -199,6 +218,7 @@ void ServerApp::Loop()
 
 		rakpeer_->DeallocatePacket(packet);
 	}
+	return false;
 }
 
 void ServerApp::SendWelcomePackage(SystemAddress& addr)
@@ -338,7 +358,7 @@ void ServerApp::InitEnemyList()
 
 void ServerApp::SpawnEnemy()
 {
-	ServerEnemy::ENEMY_TYPE type = (ServerEnemy::ENEMY_TYPE)((rand() % ServerEnemy::E_NUM_ENEMY) + 1);
+	ServerEnemy::ENEMY_TYPE type = (ServerEnemy::ENEMY_TYPE)Math::RandIntMinMax(ServerEnemy::E_EASY, ServerEnemy::E_HARD);
 	ServerEnemy* e = FetchEnemy();
 	if (e)
 	{
@@ -367,7 +387,7 @@ void ServerApp::SpawnEnemy()
 		
 		Vector2 dir = (Vector2(s_screen_width, s_screen_height) - Vector2(e->x_, e->y_)).Normalized();
 
-		switch ((type - 1))
+		switch (type)
 		{
 		case ServerEnemy::E_EASY: // Spawn easy enemy
 			{

@@ -56,7 +56,7 @@ struct ServerEnemy : ServerVelocityObject
 {
 	enum ENEMY_TYPE
 	{
-		E_EASY,
+		E_EASY = 1,
 		E_NORMAL,
 		E_HARD,
 		E_NUM_ENEMY,
@@ -129,7 +129,7 @@ private:
 public:
 	ServerApp();
 	~ServerApp();
-	void Loop();
+	bool Loop();
 };
 
 #endif

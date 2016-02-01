@@ -4,10 +4,11 @@
 int main()
 {
 	ServerApp app;
-	while (true)
+	bool end = false;
+	while (!end)
 	{
 		Sleep(10);
-		app.Loop();
+		end = app.Loop();
 	}
 	return 0;
 }

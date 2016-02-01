@@ -46,6 +46,17 @@ private:
 	RakPeerInterface* rakpeer_;
 	unsigned int timer_;
 
+	// Background
+	hgeSprite* background;
+	HTEXTURE bgTex;
+	void InitBackground();
+
+	// Base
+	int base_hp;
+	hgeSprite* base;
+	HTEXTURE baseTex;
+	void InitBase();
+
 	// Enemy
 	vector<Enemy*> enemyList;
 	Enemy* FindEnemyByID(int id);

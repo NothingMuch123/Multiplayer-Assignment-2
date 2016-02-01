@@ -1,19 +1,22 @@
 HGE Started..
 
 HGE version: 1.60
-Date: 01.02.2016, 21:20:18
+Date: 02.02.2016, 01:03:55
 
 Application: Movement
 OS: Windows 6.2.9200
-Memory: 4194303K total, 3835900K free
+Memory: 4194303K total, 4194303K free
 
-D3D Driver: igdumdim32.dll
-Description: Intel(R) HD Graphics 4600
-Version: 10.18.10.3621
+D3D Driver: nvd3dum.dll
+Description: NVIDIA GeForce GTX 660
+Version: 10.18.13.6143
 Mode: 800 x 600 x X8R8G8B8
 
 Init done.
 
+
+Finishing..
+The End.
 
 Finishing..
 The End.

@@ -95,6 +95,11 @@ void Enemy::Reset()
 	destination = Vector2::ZERO;
 }
 
+int Enemy::Injure(int damage)
+{
+	return hp -= damage;
+}
+
 void Enemy::SetHP(int hp)
 {
 	this->hp = hp;
