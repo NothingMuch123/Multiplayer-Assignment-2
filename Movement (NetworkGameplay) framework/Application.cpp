@@ -87,6 +87,24 @@ void Application::InitEnemyList()
 	}
 }
 
+void Application::DestroyEnemy(Enemy * e)
+{
+	// Spawn explosion
+	Explosion* ex = FetchExplosion();
+	if (ex)
+	{
+		ex->Init(e->GetX(), e->GetY());
+	}
+
+	// Reset enemy
+	e->Reset();
+	RakNet::BitStream bs;
+	bs.ResetWritePointer();
+	bs.Write(ID_DESTROY_ENEMY);
+	bs.Write(e->GetID());
+	rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+}
+
 void Application::InitExplosionList()
 {
 	for (int i = 0; i < 100; ++i)
@@ -362,8 +380,8 @@ bool Application::Update()
 		(*ship)->Update(timedelta);
 
 		//collisions
-		if ((*ship) == ships_.at(0))
-			checkCollisions((*ship));
+		/*if ((*ship) == ships_.at(0))
+			checkCollisions((*ship));*/
 	}
 
 	// Lab 13 Task 5 : Updating the missile
@@ -423,6 +441,25 @@ bool Application::Update()
 			}
 			else
 			{
+				for (vector<Enemy*>::iterator it2 = enemyList.begin(); it2 != enemyList.end(); ++it2)
+				{
+					Enemy* e = *it2;
+					if (e->GetActive())
+					{
+						bool collision = p->CollideWith(e);
+						if (collision)
+						{
+							DestroyEnemy(e);
+
+							// Reset projectile
+							p->Reset();
+							bs.ResetWritePointer();
+							bs.Write(ID_DESTROY_PROJECTILE);
+							bs.Write(p->GetID());
+							rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+						}
+					}
+				}
 				/*int max = projectileUpdateList.size();
 				int count = 0;
 				for (vector<Projectile*>::iterator it2 = projectileUpdateList.begin(); it2 != projectileUpdateList.end(); ++it2)
@@ -800,18 +837,7 @@ bool Application::Update()
 				bs.Read(id);
 				Enemy* e = FindEnemyByID(id);
 
-				if (e)
-				{
-					// Spawn explosion
-					Explosion* ex = FetchExplosion();
-					if (ex)
-					{
-						ex->Init(e->GetX(), e->GetY());
-					}
-
-					// Reset enemy
-					e->Reset();
-				}
+				DestroyEnemy(e);
 			}
 			break;
 		case ID_SHOOT:

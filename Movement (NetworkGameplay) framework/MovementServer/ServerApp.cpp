@@ -67,6 +67,19 @@ void ServerApp::Loop()
 		UpdateEnemy(dt);
 	}
 
+	static const int SYNCS_PER_SEC = 10;
+	static const float TIME_PER_SYNC = 1 / SYNCS_PER_SEC;
+	static float enemySyncTimer = TIME_PER_SYNC;
+	if (enemySyncTimer < TIME_PER_SYNC)
+	{
+		enemySyncTimer += dt;
+	}
+	else
+	{
+		SendEnemy();
+		enemySyncTimer = 0.f;
+	}
+
 
 	if (Packet* packet = rakpeer_->Receive())
 	{
@@ -162,7 +175,7 @@ void ServerApp::Loop()
 				bs.Read(id);
 				ResetEnemy(id);
 				bs.ResetReadPointer();
-				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, packet->systemAddress, true);
 			}
 			break;
 			// Server does not interfere with shooting
@@ -176,7 +189,7 @@ void ServerApp::Loop()
 		case ID_DESTROY_PROJECTILE:
 			{
 				bs.ResetReadPointer();
-				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, packet->systemAddress, true);
 			}
 			break;
 
@@ -325,36 +338,36 @@ void ServerApp::InitEnemyList()
 
 void ServerApp::SpawnEnemy()
 {
-	ServerEnemy::ENEMY_TYPE type = (ServerEnemy::ENEMY_TYPE)(rand() % ServerEnemy::E_NUM_ENEMY);
+	ServerEnemy::ENEMY_TYPE type = (ServerEnemy::ENEMY_TYPE)((rand() % ServerEnemy::E_NUM_ENEMY) + 1);
 	ServerEnemy* e = FetchEnemy();
 	if (e)
 	{
 		// Universal settings
 		e->active = true;
-		e->x_ = rand() % (int)(s_screen_width + S_SPAWN_OFFSET * 2.f);
-		e->x_ -= S_SPAWN_OFFSET;
+		e->x_ = Math::RandFloatMinMax(-S_SPAWN_OFFSET, s_screen_width + S_SPAWN_OFFSET); //rand() % (int)(s_screen_width + S_SPAWN_OFFSET * 2.f);
+		//e->x_ -= S_SPAWN_OFFSET;
 		if (e->x_ > 0 && e->x_ <= s_screen_width)
 		{
 			// X axis within screen, spawn around offset of y axis only
 			bool up_down = rand() % 2;
 			if (up_down) // Up
 			{
-				e->y_ = (rand() % (int)S_SPAWN_OFFSET) - S_SPAWN_OFFSET;
+				e->y_ = Math::RandFloatMinMax(-S_SPAWN_OFFSET, 0);//(rand() % (int)S_SPAWN_OFFSET) - S_SPAWN_OFFSET;
 			}
 			else // Down
 			{
-				e->y_ = (rand() % (int)S_SPAWN_OFFSET) + s_screen_height;
+				e->y_ = Math::RandFloatMinMax(s_screen_height, s_screen_height + S_SPAWN_OFFSET);//(rand() % (int)S_SPAWN_OFFSET) + s_screen_height;
 			}
 		}
 		else
 		{
-			e->y_ = rand() % (int)(s_screen_height + S_SPAWN_OFFSET * 2.f);
-			e->y_ -= S_SPAWN_OFFSET;
+			e->y_ = Math::RandFloatMinMax(-S_SPAWN_OFFSET, s_screen_height + S_SPAWN_OFFSET); //rand() % (int)(s_screen_height + S_SPAWN_OFFSET * 2.f);
+			//e->y_ -= S_SPAWN_OFFSET;
 		}
 		
 		Vector2 dir = (Vector2(s_screen_width, s_screen_height) - Vector2(e->x_, e->y_)).Normalized();
 
-		switch (type)
+		switch ((type - 1))
 		{
 		case ServerEnemy::E_EASY: // Spawn easy enemy
 			{
@@ -405,27 +418,36 @@ void ServerApp::UpdateEnemy(double dt)
 		ServerEnemy* e = *it;
 		if (e->active)
 		{
+			/*if (e->speed == 0.f)
+			{
+				e->Reset();
+				RakNet::BitStream bs;
+				bs.Write((unsigned char)ID_DESTROY_ENEMY);
+				bs.Write(e->id);
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+				continue;
+			}*/
+
 			// Update active enemy
 			Vector2 newPos = Vector2::MoveToPoint(Vector2(e->x_, e->y_), Vector2(s_screen_width * 0.5f, s_screen_height * 0.5f), e->speed * dt);
 			e->x_ = newPos.x;
 			e->y_ = newPos.y;
 
-			// Send data to everyone
-			RakNet::BitStream bs;
-			bs.Write((unsigned char)ID_UPDATE_ENEMY);
-			bs.Write(e->id);
-			bs.Write(e->x_);
-			bs.Write(e->y_);
-
-			rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
-
+			// Send data to everyone only if reset is required
 			if (newPos == Vector2(s_screen_width * 0.5f, s_screen_height * 0.5f))
 			{
-				// Send data to everyone
+				// Send final position before resetting
+				RakNet::BitStream bs;
+				bs.Write((unsigned char)ID_UPDATE_ENEMY);
+				bs.Write(e->id);
+				bs.Write(e->x_);
+				bs.Write(e->y_);
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+
+				// Send reset data to everyone
 				RakNet::BitStream bs2;
 				bs2.Write((unsigned char)ID_DESTROY_ENEMY);
 				bs2.Write(e->id);
-
 				rakpeer_->Send(&bs2, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
 
 				e->Reset();
@@ -444,6 +466,23 @@ void ServerApp::ResetEnemy(unsigned int id)
 	if (e)
 	{
 		e->Reset();
+	}
+}
+
+void ServerApp::SendEnemy()
+{
+	for (vector<ServerEnemy*>::iterator it = enemyList.begin(); it != enemyList.end(); ++it)
+	{
+		ServerEnemy* e = *it;
+		if (e->active)
+		{
+			RakNet::BitStream bs;
+			bs.Write((unsigned char)ID_UPDATE_ENEMY);
+			bs.Write(e->id);
+			bs.Write(e->x_);
+			bs.Write(e->y_);
+			rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+		}
 	}
 }
 

@@ -56,7 +56,7 @@ struct ServerEnemy : ServerVelocityObject
 {
 	enum ENEMY_TYPE
 	{
-		E_EASY = 1,
+		E_EASY,
 		E_NORMAL,
 		E_HARD,
 		E_NUM_ENEMY,
@@ -122,6 +122,7 @@ private:
 	void SpawnEnemy();
 	void UpdateEnemy(double dt);
 	void ResetEnemy(unsigned int id);
+	void SendEnemy();
 	ServerEnemy* FetchEnemy();
 	ServerEnemy* FindEnemyByID(unsigned int id);
 

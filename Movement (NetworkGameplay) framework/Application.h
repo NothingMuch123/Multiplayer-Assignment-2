@@ -50,6 +50,7 @@ private:
 	vector<Enemy*> enemyList;
 	Enemy* FindEnemyByID(int id);
 	void InitEnemyList();
+	void DestroyEnemy(Enemy* e);
 
 	// Explosion
 	vector<Explosion*> explosionList;
