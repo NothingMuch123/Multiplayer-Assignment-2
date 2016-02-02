@@ -37,6 +37,9 @@ enum MyMsgIDs
 
 	// Score
 	ID_UPDATE_SCORE,
+
+	// Chat
+	ID_CHAT_SEND,
 };
 
 #endif

@@ -23,7 +23,7 @@ ServerApp::ServerApp() :
 	Math::InitRNG();
 
 	InitEnemyList();
-	base_hp = 100;
+	base_hp = 50;
 }
 
 ServerApp::~ServerApp()
@@ -231,6 +231,15 @@ bool ServerApp::Loop()
 				it->second.score = score;
 				bs.ResetReadPointer();
 				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE, 0, packet->systemAddress, true);
+			}
+			break;
+		case ID_CHAT_SEND:
+			{
+				char cMsg[256];
+				bs.Read(cMsg);
+				chatList.push(cMsg);
+				bs.ResetReadPointer();
+				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, true);
 			}
 			break;
 

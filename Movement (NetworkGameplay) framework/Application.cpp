@@ -50,6 +50,10 @@ Application::Application()
 	, f_base_hp(nullptr)
 	, p1_score(nullptr)
 	, p2_score(nullptr)
+	, chatMsg(nullptr)
+	, typingMsg("")
+	, chatMode(false)
+	, chatShowTimer(3.f)
 {
 }
 
@@ -370,9 +374,6 @@ bool Application::Init()
 */
 bool Application::Update()
 {
-	if (hge_->Input_GetKeyState(HGEK_ESCAPE))
-		return true;
-
 	float timedelta = hge_->Timer_GetDelta();
 	if (bulletShootTimer < S_BULLET_SHOOT_INTERVAL)
 	{
@@ -384,26 +385,6 @@ bool Application::Update()
 	}
 
 	ships_.at(0)->SetAngularVelocity(0.0f);
-
-	if (hge_->Input_GetKeyState(HGEK_LEFT))
-	{
-		ships_.at(0)->SetAngularVelocity(ships_.at(0)->GetAngularVelocity() - DEFAULT_ANGULAR_VELOCITY);
-	}
-
-	if (hge_->Input_GetKeyState(HGEK_RIGHT))
-	{
-		ships_.at(0)->SetAngularVelocity(ships_.at(0)->GetAngularVelocity() + DEFAULT_ANGULAR_VELOCITY);
-	}
-
-	if (hge_->Input_GetKeyState(HGEK_UP))
-	{
-		ships_.at(0)->Accelerate(DEFAULT_ACCELERATION, timedelta);
-	}
-
-	if (hge_->Input_GetKeyState(HGEK_DOWN))
-	{
-		ships_.at(0)->Accelerate(-DEFAULT_ACCELERATION, timedelta);
-	}
 
 	// Lab 13 Task 4 : Add a key to shoot missiles
 	/*if (hge_->Input_GetKeyState(HGEK_ENTER))
@@ -422,18 +403,100 @@ bool Application::Update()
 		}
 	}*/
 
-	if (hge_->Input_GetKeyState(HGEK_ENTER))
+	static const float MAX_ENTER_TIMER = 0.5f;
+	static float enterTimer;
+
+	if (enterTimer < MAX_ENTER_TIMER)
 	{
-		if (missileShootTimer >= S_MISSILE_SHOOT_INTERVAL)
+		enterTimer += timedelta;
+	}
+
+	// Chat
+	if (chatMode)
+	{
+		char input = hge_->Input_GetKey();
+
+		if (input == HGEK_ESCAPE)
 		{
-			Shoot(Projectile::PROJ_SEEKING_MISSLE);
+			chatMode = false;
+			typingMsg = "";
+		}
+		else if (input == HGEK_ENTER && enterTimer >= MAX_ENTER_TIMER)
+		{
+			// Send
+			if (typingMsg != "")
+			{
+				RakNet::BitStream chatBS;
+				chatBS.Write((unsigned char)ID_CHAT_SEND);
+				chatBS.Write(typingMsg.c_str());
+				rakpeer_->Send(&chatBS, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+				chatList.push_back(typingMsg);
+			}
+
+			// Reset
+			chatMode = false;
+			typingMsg = "";
+			enterTimer = 0.f;
+			chatShowTimer = 5.f;
+		}
+		else if (input >= 32 && input <= 126)
+		{
+			typingMsg += input;
 		}
 	}
-	if (hge_->Input_GetKeyState(HGEK_SPACE))
+	else
 	{
-		if (bulletShootTimer >= S_BULLET_SHOOT_INTERVAL)
+		if (chatShowTimer > 0.f)
 		{
-			Shoot(Projectile::PROJ_BULLET);
+			chatShowTimer -= timedelta;
+		}
+
+		if (hge_->Input_GetKeyState(HGEK_ENTER) && enterTimer >= MAX_ENTER_TIMER)
+		{
+			chatMode = true;
+			enterTimer = 0.f;
+		}
+
+		// Ship controls
+		if (hge_->Input_GetKeyState(HGEK_LEFT))
+		{
+			ships_.at(0)->SetAngularVelocity(ships_.at(0)->GetAngularVelocity() - DEFAULT_ANGULAR_VELOCITY);
+		}
+
+		if (hge_->Input_GetKeyState(HGEK_RIGHT))
+		{
+			ships_.at(0)->SetAngularVelocity(ships_.at(0)->GetAngularVelocity() + DEFAULT_ANGULAR_VELOCITY);
+		}
+
+		if (hge_->Input_GetKeyState(HGEK_UP))
+		{
+			ships_.at(0)->Accelerate(DEFAULT_ACCELERATION, timedelta);
+		}
+
+		if (hge_->Input_GetKeyState(HGEK_DOWN))
+		{
+			ships_.at(0)->Accelerate(-DEFAULT_ACCELERATION, timedelta);
+		}
+
+		// Shooting
+		if (hge_->Input_GetKeyState(HGEK_1))
+		{
+			if (missileShootTimer >= S_MISSILE_SHOOT_INTERVAL)
+			{
+				Shoot(Projectile::PROJ_SEEKING_MISSLE);
+			}
+		}
+		if (hge_->Input_GetKeyState(HGEK_2))
+		{
+			if (bulletShootTimer >= S_BULLET_SHOOT_INTERVAL)
+			{
+				Shoot(Projectile::PROJ_BULLET);
+			}
+		}
+
+		if (hge_->Input_GetKeyState(HGEK_ESCAPE))
+		{
+			return true;
 		}
 	}
 
@@ -646,6 +709,9 @@ bool Application::Update()
 				InitBackground();
 				InitBase();
 				InitScore();
+				chatMsg = new hgeFont("font1.fnt");
+				chatMsg->SetScale(1);
+				
 			}
 			break;
 
@@ -1080,6 +1146,14 @@ bool Application::Update()
 				}
 			}
 			break;
+		case ID_CHAT_SEND:
+			{
+				char cMsg[256];
+				bs.Read(cMsg);
+				chatList.push_back(cMsg);
+				chatShowTimer = 5.f;
+			}
+			break;
 
 		default:
 			std::cout << "Unhandled Message Identifier: " << (int)msgid << std::endl;
@@ -1319,6 +1393,23 @@ void Application::Render()
 	{
 		string score = "Other score: " + std::to_string(ships_.at(1)->GetScore());
 		p1_score->Render(S_SCREEN_WIDTH * 0.75f, S_SCREEN_HEIGHT * 0.1f, HGETEXT_CENTER, score.c_str());
+	}
+
+	// Chat
+	if (chatMode || chatShowTimer > 0.f)
+	{
+		const float MSG_INTERVAL = 30.f;
+		if (chatList.size() > 0)
+		{
+			int index = 0;
+			for (vector<string>::iterator it = chatList.begin(); it != chatList.end(); ++it, ++index)
+			{
+				string msg = *it;
+				chatMsg->Render(0, S_SCREEN_HEIGHT - (MSG_INTERVAL * (chatList.size() + 1 - index)), HGETEXT_LEFT, msg.c_str());
+			}
+		}
+
+		chatMsg->Render(0, S_SCREEN_HEIGHT - MSG_INTERVAL, HGETEXT_LEFT, typingMsg.c_str());
 	}
 
 	hge_->Gfx_EndScene();

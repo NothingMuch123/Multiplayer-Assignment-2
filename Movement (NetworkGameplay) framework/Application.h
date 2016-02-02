@@ -68,6 +68,13 @@ private:
 	hgeFont* p2_score;
 	void InitScore();
 
+	// Chat
+	vector<string> chatList;
+	hgeFont* chatMsg;
+	string typingMsg;
+	bool chatMode;
+	float chatShowTimer;
+
 	// Enemy
 	vector<Enemy*> enemyList;
 	Enemy* FindEnemyByID(int id);

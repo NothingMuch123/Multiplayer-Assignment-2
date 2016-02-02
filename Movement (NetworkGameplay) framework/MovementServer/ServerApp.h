@@ -4,9 +4,13 @@
 #include "RakNetTypes.h"
 #include <map>
 #include <vector>
+#include <string>
+#include <queue>
 #include "Vector2.h"
 
 using std::vector;
+using std::string;
+using std::queue;
 
 class RakPeerInterface;
 
@@ -131,6 +135,8 @@ private:
 	int base_hp;
 	int p1_score;
 	int p2_score;
+
+	queue<string> chatList;
 
 public:
 	ServerApp();
