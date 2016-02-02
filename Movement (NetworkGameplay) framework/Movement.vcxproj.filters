@@ -50,6 +50,9 @@
     <ClCompile Include="Projectile.cpp">
       <Filter>Projectile</Filter>
     </ClCompile>
+    <ClCompile Include="Boom.cpp">
+      <Filter>Explosion</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -84,6 +87,9 @@
     </ClInclude>
     <ClInclude Include="Projectile.h">
       <Filter>Projectile</Filter>
+    </ClInclude>
+    <ClInclude Include="Boom.h">
+      <Filter>Explosion</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

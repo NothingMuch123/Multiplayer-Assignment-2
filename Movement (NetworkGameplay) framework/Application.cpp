@@ -12,7 +12,7 @@
 #include <fstream>
 #include "hgefont.h"
 
-const float Application::S_BULLET_SHOOT_INTERVAL = 0.5f;
+const float Application::S_BULLET_SHOOT_INTERVAL = 0.2f;
 const float Application::S_MISSILE_SHOOT_INTERVAL = 1.f;;
 
 // Lab 13 Task 9a : Uncomment the macro NETWORKMISSILE
@@ -158,6 +158,28 @@ Explosion * Application::FetchExplosion()
 	return nullptr;
 }
 
+void Application::InitBoomList()
+{
+	for (int i = 0; i < 100; ++i)
+	{
+		Boom* b = new Boom();
+		boomList.push_back(b);
+	}
+}
+
+Boom * Application::FetchBoom()
+{
+	for (vector<Boom*>::iterator it = boomList.begin(); it != boomList.end(); ++it)
+	{
+		Boom* b = *it;
+		if (!b->isActive())
+		{
+			return b;
+		}
+	}
+	return nullptr;
+}
+
 void Application::InitProjectileList()
 {
 	for (int i = 0; i < 100; ++i)
@@ -274,6 +296,17 @@ Enemy * Application::FindNearest()
 		}
 	}
 	return shortestEnemy;
+}
+
+void Application::DestroyProjectile(Projectile * p)
+{
+	Boom* b = FetchBoom();
+	if (b)
+	{
+		b->Init(p->GetX(), p->GetY());
+	}
+
+	p->Reset();
 }
 
 Ship * Application::FindShipByID(int id)
@@ -465,7 +498,7 @@ bool Application::Update()
 			RakNet::BitStream bs;
 			if (reset)
 			{
-				p->Reset();
+				DestroyProjectile(p);
 				bs.Write((unsigned char)ID_DESTROY_PROJECTILE);
 				bs.Write(p->GetID());
 				rakpeer_->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
@@ -513,7 +546,7 @@ bool Application::Update()
 							}
 
 							// Reset projectile
-							p->Reset();
+							DestroyProjectile(p);
 							bs.ResetWritePointer();
 							bs.Write((unsigned char)ID_DESTROY_PROJECTILE);
 							bs.Write(p->GetID());
@@ -574,6 +607,16 @@ bool Application::Update()
 		}
 	}
 
+	// Update boom
+	for (vector<Boom*>::iterator it = boomList.begin(); it != boomList.end(); ++it)
+	{
+		Boom* b = *it;
+		if (b->isActive())
+		{
+			b->Update(timedelta);
+		}
+	}
+
 	// Packet receive
 	if (Packet* packet = rakpeer_->Receive())
 	{
@@ -598,6 +641,7 @@ bool Application::Update()
 				SendScreenSize();
 				InitEnemyList();
 				InitExplosionList();
+				InitBoomList();
 				InitProjectileList();
 				InitBackground();
 				InitBase();
@@ -1014,6 +1058,7 @@ bool Application::Update()
 				if (p && p->GetActive())
 				{
 					// Reset projectile
+					//DestroyProjectile(p);
 					p->Reset();
 				}
 			}
@@ -1235,6 +1280,16 @@ void Application::Render()
 		if (p->GetActive())
 		{
 			p->Render();
+		}
+	}
+
+	// Render boom
+	for (vector<Boom*>::iterator it = boomList.begin(); it != boomList.end(); ++it)
+	{
+		Boom* b = *it;
+		if (b->isActive())
+		{
+			b->Render();
 		}
 	}
 

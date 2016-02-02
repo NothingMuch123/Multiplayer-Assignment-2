@@ -23,7 +23,7 @@ ServerApp::ServerApp() :
 	Math::InitRNG();
 
 	InitEnemyList();
-	base_hp = 5;
+	base_hp = 100;
 }
 
 ServerApp::~ServerApp()

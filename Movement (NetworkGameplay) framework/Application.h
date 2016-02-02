@@ -9,8 +9,11 @@
 // Enemies
 #include "Enemy.h"
 
-// Animation
+// Explosion
 #include "Explosion.h"
+
+// Boom
+#include "Boom.h"
 
 // Projectile
 #include "Projectile.h"
@@ -76,6 +79,11 @@ private:
 	void InitExplosionList();
 	Explosion* FetchExplosion();
 
+	// Boom (Projectile)
+	vector<Boom*> boomList;
+	void InitBoomList();
+	Boom* FetchBoom();
+
 	// Projectile
 	vector<Projectile*> projectileList;
 	void InitProjectileList();
@@ -86,6 +94,7 @@ private:
 	float bulletShootTimer;
 	float missileShootTimer;
 	vector<Projectile*> projectileUpdateList;
+	void DestroyProjectile(Projectile* p);
 
 	// Ship
 	Ship* FindShipByID(int id);
